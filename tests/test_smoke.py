@@ -1,0 +1,31 @@
+import json
+
+import yaml
+
+
+def test_register_matches_manifest(plugin, ctx):
+    plugin.register(ctx)
+    manifest = yaml.safe_load((plugin.__file__.rsplit("/", 1)[0] + "/plugin.yaml") and open(
+        plugin.__file__.rsplit("/", 1)[0] + "/plugin.yaml"))
+    assert sorted(ctx.tools) == sorted(manifest["provides_tools"])
+    assert sorted(ctx.hooks) == sorted(manifest["provides_hooks"])
+
+
+def test_status_never_leaks_secret(plugin, ctx, monkeypatch):
+    from solders.keypair import Keypair
+
+    kp = Keypair()
+    secret = str(kp)
+    monkeypatch.setenv("SIGHTLINE_SECRET_KEY", secret)
+    monkeypatch.delenv("SIGHTLINE_RPC_URL", raising=False)
+    plugin.register(ctx)
+    raw = ctx.tools["sightline_status"]["handler"]({})
+    out = json.loads(raw)
+    assert out == {"network": "devnet", "rpc_url": plugin.DEFAULT_RPC_URL,
+                   "public_key": str(kp.pubkey())}
+    assert secret not in raw
+
+
+def test_hook_allows(plugin, ctx):
+    plugin.register(ctx)
+    assert ctx.hooks["pre_tool_call"][0](tool_name="sightline_status", args={}) is None
