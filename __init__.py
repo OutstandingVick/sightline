@@ -19,3 +19,19 @@ STATUS_SCHEMA = {
     ),
     "parameters": {"type": "object", "properties": {}, "required": []},
 }
+
+
+def _secret(name: str) -> str | None:
+    """Read a credential through Hermes' profile-aware secret route."""
+    try:
+        from agent.secret_scope import get_secret
+    except ImportError:  # running outside Hermes (tests, scripts)
+        return os.environ.get(name)
+    return get_secret(name)
+
+
+def _network(rpc_url: str) -> str:
+    for name in ("devnet", "testnet", "mainnet"):
+        if name in rpc_url:
+            return name
+    return "localnet" if "localhost" in rpc_url or "127.0.0.1" in rpc_url else "custom"
