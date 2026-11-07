@@ -5,6 +5,7 @@ import sys
 import pytest
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))  # makes the inner `sightline` package importable
 
 
 class FakeCtx:
@@ -32,3 +33,14 @@ def plugin():
 @pytest.fixture
 def ctx():
     return FakeCtx()
+
+
+@pytest.fixture
+def keypair(monkeypatch):
+    from solders.keypair import Keypair
+
+    kp = Keypair()
+    monkeypatch.setenv("SIGHTLINE_SECRET_KEY", str(kp))
+    monkeypatch.delenv("SIGHTLINE_RPC_URL", raising=False)
+    monkeypatch.delenv("SIGHTLINE_ALLOW_MAINNET", raising=False)
+    return kp

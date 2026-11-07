@@ -51,15 +51,11 @@ PAY_SCHEMA = {
     },
 }
 
-
 def _wallet():
     from .config import load_settings
     from .wallet import Wallet
 
     return Wallet(load_settings())
-
-
-
 
 def _guard(fn):
     """Tool handlers return JSON strings and never raise or leak tracebacks."""
@@ -79,7 +75,6 @@ def _guard(fn):
     handler.__name__ = fn.__name__
     return handler
 
-
 @_guard
 def sightline_status(args: dict) -> dict:
     from .config import load_settings
@@ -87,12 +82,10 @@ def sightline_status(args: dict) -> dict:
     s = load_settings()
     return {"network": s.network, "rpc_url": s.rpc_url, "public_key": str(s.public_key)}
 
-
 @_guard
 def sightline_balance(args: dict) -> dict:
     w = _wallet()
     return {"network": w.settings.network, "public_key": str(w.owner), **w.get_balances()}
-
 
 @_guard
 def sightline_pay(args: dict) -> dict:
@@ -101,7 +94,6 @@ def sightline_pay(args: dict) -> dict:
     w = _wallet()
     intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
     return execute_intent(w, intent).to_dict()
-
 
 TOOLS = [
     (STATUS_SCHEMA, sightline_status),
