@@ -50,6 +50,8 @@ def sightline_status(args: dict, **kwargs) -> str:
 
         out["public_key"] = str(Keypair.from_base58_string(secret.strip()).pubkey())
         return json.dumps(out)
+    except ModuleNotFoundError as exc:
+        return json.dumps({"error": f"missing dependency {exc.name!r}; enable the plugin and restart Hermes"})
     except Exception as exc:  # never raise, never echo the secret
         return json.dumps({"error": f"status failed: {type(exc).__name__}"})
 
