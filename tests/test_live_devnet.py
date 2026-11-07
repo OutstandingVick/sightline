@@ -6,15 +6,15 @@ import pytest
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
+from sightline.config import load_settings
+from sightline.intents import execute_intent, pay_intent
+from sightline.wallet import Wallet
+
 pytestmark = pytest.mark.skipif(os.environ.get("SIGHTLINE_LIVE_TESTS") != "1",
                                 reason="set SIGHTLINE_LIVE_TESTS=1 to hit devnet")
 
 
 def test_send_0_001_sol_on_devnet():
-    from sightline.config import load_settings
-    from sightline.intents import execute_intent, pay_intent
-    from sightline.wallet import Wallet
-
     settings = load_settings()
     assert settings.network == "devnet", "live tests only run on devnet"
     w = Wallet(settings)
