@@ -21,3 +21,10 @@ requires_env:
 python_dependencies:
   - "solana>=0.36,<0.37"
   - "solders>=0.26,<0.27"
+config_schema:
+  rpc_url:
+    type: secret
+    env: SIGHTLINE_RPC_URL
+    label: "Solana RPC URL"
+    description: "Optional. Defaults to https://api.devnet.solana.com"
+    required: false
