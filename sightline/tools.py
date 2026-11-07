@@ -5,9 +5,7 @@ from __future__ import annotations
 import json
 import logging
 
-from .config import ConfigError, load_settings
-from .intents import execute_intent, pay_intent
-from .wallet import Wallet, WalletError
+# Solana deps are imported lazily so the plugin registers even before they are installed.
 
 logger = logging.getLogger(__name__)
 
@@ -54,8 +52,13 @@ PAY_SCHEMA = {
 }
 
 
-def _wallet() -> Wallet:
+def _wallet():
+    from .config import load_settings
+    from .wallet import Wallet
+
     return Wallet(load_settings())
+
+
 
 
 def _guard(fn):
@@ -64,12 +67,12 @@ def _guard(fn):
     def handler(args: dict, **kwargs) -> str:
         try:
             return json.dumps(fn(args or {}))
-        except (WalletError, ConfigError) as exc:
-            return json.dumps({"error": exc.code, "message": exc.message})
         except ModuleNotFoundError as exc:
             return json.dumps({"error": "missing_dependency",
                                "message": f"{exc.name!r} not installed; enable the plugin and restart Hermes"})
         except Exception as exc:
+            if hasattr(exc, "code") and hasattr(exc, "message"):  # WalletError / ConfigError
+                return json.dumps({"error": exc.code, "message": exc.message})
             logger.warning("sightline: %s failed: %s", fn.__name__, type(exc).__name__)
             return json.dumps({"error": "internal_error", "message": type(exc).__name__})
 
@@ -79,6 +82,8 @@ def _guard(fn):
 
 @_guard
 def sightline_status(args: dict) -> dict:
+    from .config import load_settings
+
     s = load_settings()
     return {"network": s.network, "rpc_url": s.rpc_url, "public_key": str(s.public_key)}
 
@@ -91,6 +96,8 @@ def sightline_balance(args: dict) -> dict:
 
 @_guard
 def sightline_pay(args: dict) -> dict:
+    from .intents import execute_intent, pay_intent
+
     w = _wallet()
     intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
     return execute_intent(w, intent).to_dict()
