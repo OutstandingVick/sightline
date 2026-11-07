@@ -35,3 +35,20 @@ def _network(rpc_url: str) -> str:
         if name in rpc_url:
             return name
     return "localnet" if "localhost" in rpc_url or "127.0.0.1" in rpc_url else "custom"
+
+
+def sightline_status(args: dict, **kwargs) -> str:
+    """Return network, RPC URL and public key. The secret never leaves this function."""
+    try:
+        rpc_url = _secret("SIGHTLINE_RPC_URL") or DEFAULT_RPC_URL
+        out = {"network": _network(rpc_url), "rpc_url": rpc_url, "public_key": None}
+        secret = _secret("SIGHTLINE_SECRET_KEY")
+        if not secret:
+            out["error"] = "SIGHTLINE_SECRET_KEY is not set"
+            return json.dumps(out)
+        from solders.keypair import Keypair
+
+        out["public_key"] = str(Keypair.from_base58_string(secret.strip()).pubkey())
+        return json.dumps(out)
+    except Exception as exc:  # never raise, never echo the secret
+        return json.dumps({"error": f"status failed: {type(exc).__name__}"})
