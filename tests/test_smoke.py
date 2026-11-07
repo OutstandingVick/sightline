@@ -2,11 +2,12 @@ import json
 
 import yaml
 
+from conftest import ROOT
+
 
 def test_register_matches_manifest(plugin, ctx):
     plugin.register(ctx)
-    manifest = yaml.safe_load((plugin.__file__.rsplit("/", 1)[0] + "/plugin.yaml") and open(
-        plugin.__file__.rsplit("/", 1)[0] + "/plugin.yaml"))
+    manifest = yaml.safe_load((ROOT / "plugin.yaml").read_text())
     assert sorted(ctx.tools) == sorted(manifest["provides_tools"])
     assert sorted(ctx.hooks) == sorted(manifest["provides_hooks"])
 
