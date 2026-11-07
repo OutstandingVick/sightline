@@ -170,13 +170,14 @@ class Wallet:
         mint_pk = mint if isinstance(mint, Pubkey) else _address(mint, "mint")
         m = self.get_mint(mint_pk)
         units = _units(amount, m.decimals)
+        label = symbol_for(str(mint_pk), self.settings.network) or short(str(mint_pk))
         source = get_associated_token_address(self.owner, mint_pk, m.program_id)
         have = self._token_balance(source)
         if units > have:
             raise WalletError(
                 "insufficient_funds",
-                f"need {from_base_units(units, m.decimals).normalize()} tokens, have "
-                f"{from_base_units(have, m.decimals).normalize()}",
+                f"need {from_base_units(units, m.decimals).normalize()} {label}, wallet holds "
+                f"{from_base_units(have, m.decimals).normalize()} {label}",
             )
         dest = get_associated_token_address(dest_owner, mint_pk, m.program_id)
         ixs = [
@@ -186,7 +187,6 @@ class Wallet:
                 owner=self.owner, amount=units, decimals=m.decimals,
             )),
         ]
-        label = symbol_for(str(mint_pk), self.settings.network) or short(str(mint_pk))
         return self._compile(ixs, f"send {from_base_units(units, m.decimals).normalize()} {label} to {dest_owner}")
 
     def _token_balance(self, token_account: Pubkey) -> int:
