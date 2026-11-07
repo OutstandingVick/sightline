@@ -1,0 +1,23 @@
+name: sightline
+version: "0.1.0"
+description: >-
+  Solana transaction firewall for Hermes. Intent-level wallet tools whose signing
+  calls are checked against user-issued, time-boxed, revocable grants, simulated
+  and explained before they run. The private key never reaches the model.
+  Devnet by default.
+author: Outstandingvick
+license: MIT
+homepage: https://github.com/OutstandingVick/sightline
+tags: [solana, wallet, security]
+provides_tools:
+  - sightline_status
+provides_hooks:
+  - pre_tool_call
+requires_env:
+  - name: SIGHTLINE_SECRET_KEY
+    description: "Base58-encoded Solana keypair (64-byte secret). Use a devnet wallet."
+    url: "https://faucet.solana.com"
+    secret: true
+python_dependencies:
+  - "solana>=0.36,<0.37"
+  - "solders>=0.26,<0.27"
