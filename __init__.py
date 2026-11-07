@@ -52,3 +52,21 @@ def sightline_status(args: dict, **kwargs) -> str:
         return json.dumps(out)
     except Exception as exc:  # never raise, never echo the secret
         return json.dumps({"error": f"status failed: {type(exc).__name__}"})
+
+
+def _pre_tool_call(tool_name: str = "", **kwargs) -> None:
+    """Placeholder firewall hook: log Sightline tool calls, allow everything."""
+    if tool_name.startswith("sightline_"):
+        logger.info("sightline: pre_tool_call %s", tool_name)
+    return None
+
+
+def register(ctx) -> None:
+    ctx.register_tool(
+        name="sightline_status",
+        toolset=TOOLSET,
+        schema=STATUS_SCHEMA,
+        handler=sightline_status,
+        description=STATUS_SCHEMA["description"],
+    )
+    ctx.register_hook("pre_tool_call", _pre_tool_call)
