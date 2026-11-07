@@ -11,7 +11,7 @@ from sightline.amounts import AmountError, from_base_units, to_base_units
     (1, 6, 1_000_000),
     (0.3, 6, 300_000),  # float 0.3 is 0.299999...; str() path keeps it exact
     ("1.10", 2, 110),
-    (123456789.123456789, 9, 123456789123456789),
+    ("123456789.123456789", 9, 123456789123456789),  # big values: pass strings,
 ])
 def test_to_base_units_exact(amount, decimals, expected):
     assert to_base_units(amount, decimals) == expected
