@@ -28,3 +28,9 @@ config_schema:
     label: "Solana RPC URL"
     description: "Optional. Defaults to https://api.devnet.solana.com"
     required: false
+  allow_mainnet:
+    type: secret
+    env: SIGHTLINE_ALLOW_MAINNET
+    label: "Allow mainnet"
+    description: "Optional. Set to 1 to allow a mainnet RPC. Off by default."
+    required: false
