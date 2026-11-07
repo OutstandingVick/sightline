@@ -11,7 +11,6 @@ WSOL_MINT = "So11111111111111111111111111111111111111112"
 KNOWN_MINTS: dict[str, dict[str, str]] = {
     "devnet": {
         "USDC": "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
-        "EURC": "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr",
         "WSOL": WSOL_MINT,
     },
     "mainnet": {
