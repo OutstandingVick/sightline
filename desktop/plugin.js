@@ -105,7 +105,7 @@ function Header({ state }) {
     state.pubkey
       ? jsxs('div', { className: 'sl-row', children: [
           jsx('span', { className: 'sl-key', title: state.pubkey, children: short(state.pubkey) }),
-          jsx(CopyButton, { text: state.pubkey, label: 'Copy wallet address', buttonSize: 'icon-xs' })
+          jsx(CopyButton, { text: state.pubkey, label: 'Copy wallet address', appearance: 'icon', showLabel: false, buttonSize: 'icon-xs', buttonVariant: 'ghost' })
         ] })
       : jsx('span', { className: 'sl-error', children: 'No wallet configured (set SIGHTLINE_SECRET_KEY)' }),
     b
