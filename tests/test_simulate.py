@@ -114,3 +114,16 @@ def test_writable_accounts_follow_message_header(setup):
     writable = message_writable(msg)
     readonly = {"11111111111111111111111111111111", str(mint), str(DEST)}
     assert writable[0] == str(w.owner) and not readonly & set(writable)
+
+
+@pytest.mark.parametrize("err,logs,expected", [
+    ("AccountNotFound", [], "insufficient funds: the wallet has no SOL to pay fees"),
+    ({"InstructionError": [1, {"Custom": 1}]}, [], "insufficient token balance (instruction 1)"),
+    ({"InstructionError": [0, "InvalidAccountData"]}, [], "instruction 0 failed: InvalidAccountData"),
+    ({"InstructionError": [0, {"Custom": 1}]}, ["Transfer: insufficient lamports 1, need 2"], "insufficient funds"),
+    ("BlockhashNotFound", [], "simulation failed: BlockhashNotFound"),
+])
+def test_error_descriptions(err, logs, expected):
+    from sightline.simulate import _describe_err
+
+    assert _describe_err(err, logs) == expected
