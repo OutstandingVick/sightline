@@ -89,3 +89,12 @@ def test_real_loader_finds_the_package(monkeypatch):
     app.include_router(mod.router)
     body = TestClient(app).get("/state").json()
     assert body["pubkey"] is None and body["network"] == "devnet"
+
+
+def test_state_limit_is_clamped(api):
+    from sightline import audit
+
+    for _ in range(5):
+        audit.append("decision", {"verdict": "BLOCK", "intent": {}})
+    assert len(api.get("/api/plugins/sightline/state?limit=2").json()["recent_audit"]) == 2
+    assert len(api.get("/api/plugins/sightline/state?limit=0").json()["recent_audit"]) == 1
