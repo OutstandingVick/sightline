@@ -44,8 +44,6 @@ def mismatches(intent, report: SimulationReport) -> list[str]:
 
     if report.recipient_received is not None and Decimal(report.recipient_received) != amount:
         out.append(f"recipient receives {report.recipient_received}; expected {amount}")
-    for p in report.unknown_programs:
-        out.append(f"calls an unknown program {short(p)}")
     return out
 
 
@@ -63,6 +61,8 @@ def explain(intent, report: SimulationReport) -> str:
     detail.append(f"Network fee ≈ {_sol(report.fee_lamports)} SOL.")
     detail.append("Programs: " + ", ".join(dict.fromkeys(program_label(p) for p in report.programs)) + ".")
     lines.append(" ".join(detail))
+    if report.unknown_programs:
+        lines.append("⚠ Unknown program: " + ", ".join(short(p) for p in report.unknown_programs))
     problems = mismatches(intent, report)
     if problems:
         lines.append("⚠ Mismatch: " + "; ".join(problems))
