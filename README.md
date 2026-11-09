@@ -7,10 +7,45 @@ call passes a `pre_tool_call` hook that checks a user-issued, time-boxed, revoca
 grant, simulates the transaction, explains it in plain English, and blocks or
 approves it. The private key never reaches the model. Devnet by default.
 
-**Status: WIP (Phase 2 — simulation).** Balances and SOL/SPL payments work on
-devnet, and every payment is simulated and explained in plain English before it
-is signed; if simulation fails, nothing is sent. Grants and the firewall come in
-later phases; the `pre_tool_call` hook is still a logging placeholder.
+**Status: Phases 0–4 done (devnet).** The agent pays only inside grants you issue;
+anything else needs your approval or is blocked, and every decision lands in a
+tamper-evident log.
+
+## How it works
+
+```
+model ──sightline_pay──▶ pre_tool_call hook ──▶ build → simulate → firewall
+                                  │                                  │
+                         BLOCK / APPROVE (you) / ALLOW (grant)       │
+                                  ▼                                  ▼
+                         execute_intent: firewall again + reserve spend (atomic) → sign → send
+                                  │
+                                  ▼
+                         hash-chained audit log  ◀── /sightline grant · revoke (you only)
+```
+
+## Grants (you, via slash command)
+
+```
+/sightline grant 5 USDC to 7xKq…9fP2 for 1h max 2 note "lunch"
+/sightline grants
+/sightline revoke g_4f2a        # or: /sightline revoke all
+/sightline log 20
+/sightline verify
+```
+
+Recipients must be named (`to any` is allowed but explicit). Defaults: 24h, max per
+tx = daily cap. The model can read grants (`sightline_status`) but has no tool that
+creates, widens or revokes them.
+
+## Firewall
+
+Hard blocks, which no grant or approval overrides: failed simulation, a mismatch
+between the request and simulated effects, unknown programs, approve/authority/
+close/assign instructions, dropping below 0.01 SOL, spending >90% of a token
+balance at once, mainnet without opt-in. Inside a grant → sent. Otherwise → Hermes
+asks you once; with nobody to ask, it is blocked. See
+[docs/security-model.md](docs/security-model.md).
 
 ## Tools
 
@@ -89,13 +124,15 @@ hermes plugins validate . --install-deps
 - [Simulation report schema + samples](docs/simulation-report.md)
 - [Simulation approach and RPC quirks](docs/phase2-notes.md)
 - [Devnet test tokens](docs/devnet-tokens.md)
+- [Security model](docs/security-model.md)
 - [Troubleshooting](docs/troubleshooting.md)
-- Live results: [Phase 1](docs/phase1-live-results.md), [Phase 2](docs/phase2-live-results.md)
+- Live results: [Phase 1](docs/phase1-live-results.md), [Phase 2](docs/phase2-live-results.md), [Phase 3+4](docs/phase34-live-results.md)
 
 ## Disclosures
 
 - Makes network calls to the configured Solana RPC (devnet by default).
 - Reads `SIGHTLINE_SECRET_KEY` via Hermes' secret route; never returns it to the model.
+- Stores grants and the audit log in Hermes' plugin data directory (`plugin_db("sightline")`).
 
 ## License
 
