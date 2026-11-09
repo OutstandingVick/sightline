@@ -43,3 +43,15 @@ def test_status_exposes_grants_read_only(plugin, ctx, keypair):
                   recipients=["*"], duration_s=60)
     out = json.loads(ctx.tools["sightline_status"]["handler"]({}))
     assert out["grants"][0]["remaining_24h"] == "1" and "read-only" in out["note"]
+
+
+def test_desktop_half_cannot_create_grants():
+    """The pane may revoke; nothing in it or its backend creates or widens a grant."""
+    import pathlib
+
+    root = pathlib.Path(__file__).resolve().parents[1]
+    js = (root / "desktop" / "plugin.js").read_text()
+    api = (root / "dashboard" / "plugin_api.py").read_text()
+    assert "grants.create" not in api and "create(" not in api
+    assert "/grant'" not in js and "'/grants'" not in js
+    assert js.count("method: 'POST'") == 1  # the single POST is /revoke
