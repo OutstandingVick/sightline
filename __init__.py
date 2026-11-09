@@ -9,11 +9,16 @@ logger = logging.getLogger(__name__)
 TOOLSET = "sightline"
 
 
-def _pre_tool_call(tool_name: str = "", **kwargs) -> None:
-    """Placeholder firewall hook: log Sightline tool calls, allow everything."""
-    if tool_name.startswith("sightline_"):
-        logger.info("sightline: pre_tool_call %s", tool_name)
-    return None
+def _pre_tool_call(tool_name: str = "", **kwargs):
+    """Firewall hook. Only sightline_pay is gated; any failure blocks (fail closed)."""
+    if tool_name != "sightline_pay":
+        return None
+    try:
+        from .sightline.gate import pre_tool_call
+    except Exception as exc:
+        logger.exception("sightline: firewall unavailable")
+        return {"action": "block", "message": f"Sightline blocked: firewall unavailable ({type(exc).__name__})."}
+    return pre_tool_call(tool_name=tool_name, **kwargs)
 
 
 def register(ctx) -> None:
@@ -28,3 +33,18 @@ def register(ctx) -> None:
             description=schema["description"],
         )
     ctx.register_hook("pre_tool_call", _pre_tool_call)
+
+    def _command(raw_args: str = "", **kwargs) -> str:
+        """/sightline — typed by the human. The model has no tool that reaches this."""
+        try:
+            from .sightline.commands import handle
+        except Exception as exc:
+            return f"Sightline unavailable: {type(exc).__name__}"
+        return handle(raw_args, ask=getattr(ctx, "ask_choice", None))
+
+    ctx.register_command(
+        "sightline",
+        handler=_command,
+        description="Sightline wallet firewall: grant, grants, revoke, log, verify",
+        args_hint="grant|grants|revoke|log|verify",
+    )
