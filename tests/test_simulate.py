@@ -1,4 +1,3 @@
-from decimal import Decimal
 
 import pytest
 from solders.keypair import Keypair
@@ -27,7 +26,6 @@ def setup(keypair, cluster):
 
 def test_sol_transfer_diff(setup):
     w, _ = setup
-    i = pay_intent(w, str(DEST), "0.01")
     r = simulate(w, w.build_sol_transfer(str(DEST), "0.01"), recipient=str(DEST))
     assert r.ok and r.sol_delta_lamports == -(10_000_000 + FEE) and r.fee_lamports == FEE
     assert r.token_deltas == [] and r.recipient_received == "0.01" and not r.creates_accounts

@@ -26,7 +26,6 @@ from decimal import Decimal
 
 import httpx
 from solders.message import MessageV0
-from solders.pubkey import Pubkey
 
 from .amounts import from_base_units
 from .tokens import short, symbol_for
