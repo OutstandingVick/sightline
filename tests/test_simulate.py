@@ -145,3 +145,22 @@ def test_rpc_error_object_fails_closed(setup, cluster, monkeypatch):
     monkeypatch.setattr(sim, "_post", lambda *a, **k: {"error": {"code": -32602, "message": "bad params"}})
     r = simulate(w, w.build_sol_transfer(str(DEST), "0.01"))
     assert not r.ok and "bad params" in r.error
+
+
+def test_instruction_kinds_decoded(setup):
+    w, mint = setup
+    msg = w.build_spl_transfer(str(DEST), mint, 1).tx.message
+    from sightline.simulate import decode_instruction, instruction_kinds
+
+    assert instruction_kinds(msg) == ["Associated Token.CreateIdempotent", "Token.TransferChecked"]
+    assert decode_instruction("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", bytes([6, 0])) == "Token.SetAuthority"
+    assert decode_instruction("11111111111111111111111111111111", (1).to_bytes(4, "little")) == "System.Assign"
+    assert decode_instruction("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", b"") == "Token.Unknown"
+    assert decode_instruction("Evi1Prog11111111111111111111111111111111111", b"\x00").startswith("unknown")
+
+
+def test_report_has_firewall_balances(setup):
+    w, mint = setup
+    r = simulate(w, w.build_spl_transfer(str(DEST), mint, 1), recipient=str(DEST))
+    assert r.sol_post_lamports == 10**10 - FEE - ATA_RENT
+    assert [(t.pre_ui, t.delta_ui) for t in r.token_deltas] == [("5", "-1")]
