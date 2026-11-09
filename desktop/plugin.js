@@ -254,11 +254,11 @@ function Pane({ ctx }) {
 }
 
 function StatusItem({ ctx }) {
-  const { data } = useQuery(makeStateQuery(ctx))
+  const { data, error } = useQuery(makeStateQuery(ctx))
   const now = Date.now() / 1000
   const n = data ? data.grants.filter(g => g.status === 'active' && g.expires_at > now).length : 0
   const last = data && data.recent_audit.find(e => e.event === 'decision')
-  const text = data ? `Sightline • ${n} grant${n === 1 ? '' : 's'}${last ? ` • last: ${last.verdict}` : ''}` : 'Sightline'
+  const text = data ? `Sightline • ${n} grant${n === 1 ? '' : 's'}${last ? ` • last: ${last.verdict}` : ''}` : error ? 'Sightline • offline' : 'Sightline'
   return jsx('button', { type: 'button', className: 'sl-status', title: 'Open Sightline firewall',
     onClick: () => host.revealPane(PANE_ID), children: text })
 }
