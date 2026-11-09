@@ -163,7 +163,8 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
         return report
 
     pre, post = value.get("preBalances"), value.get("postBalances")
-    if pre is None or post is None or "preTokenBalances" not in value or "postTokenBalances" not in value:
+    fields = ("preBalances", "postBalances", "preTokenBalances", "postTokenBalances")
+    if any(value.get(f) is None for f in fields) or len(pre) != len(keys) or len(post) != len(keys):
         report.error = "RPC did not return balance changes; refusing to proceed"
         return report
 
