@@ -7,10 +7,12 @@ Sightline closes the loop **permission → enforcement → revocation → verifi
 | Actor | Can | Cannot |
 |---|---|---|
 | Human (slash command) | `/sightline grant`, `grants`, `revoke`, `log`, `verify` | — |
+| Human (Desktop pane) | view state, revoke a grant | create, widen or extend a grant (no such route) |
 | Model (tools) | read status + grants, balance, preview, request a payment | create, widen, extend or revoke a grant; sign arbitrary transactions |
 
 There is no model-callable tool that writes grants or policy
-(`tests/test_model_cannot_grant.py`). Slash commands run only when a person
+(`tests/test_model_cannot_grant.py`), and the Desktop backend has exactly two
+routes, `GET /state` and `POST /revoke` (`tests/test_plugin_api.py`). Slash commands run only when a person
 types them.
 
 ## Enforcement path for `sightline_pay`
