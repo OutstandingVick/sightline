@@ -1,5 +1,5 @@
 name: sightline
-version: "0.2.0"
+version: "0.3.0"
 description: >-
   Solana transaction firewall for Hermes. Intent-level wallet tools whose signing
   calls are checked against user-issued, time-boxed, revocable grants, simulated
