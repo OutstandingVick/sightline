@@ -115,3 +115,34 @@ def test_revoke_unknown_or_twice(client, keypair, grant_any):
     assert revoke("g_ffff")["error"] == "not_found"
     revoke(grant_any.id)
     assert revoke(grant_any.id)["error"] == "not_active"
+
+
+def test_ended_grants_hidden_after_a_day(client, keypair, grant_any):
+    import time
+
+    from sightline.state import get_state
+
+    later = time.time() + 3600 + 25 * 3600
+    assert get_state(now=later)["grants"] == []
+    assert get_state(now=time.time() + 3601)["grants"][0]["status"] == "expired"
+
+
+def test_failed_and_grant_event_views(client, keypair):
+    from sightline import audit
+    from sightline.state import get_state
+
+    seq = audit.append("execute", {"intent": {"amount": "1"}, "grant_id": None, "approval": "human"})
+    audit.append("failed", {"ref": seq, "error": "send_failed", "message": "blockhash expired"})
+    failed = get_state()["recent_audit"][0]
+    assert failed["event"] == "failed" and failed["ref"] == seq and failed["error"] == "send_failed"
+
+
+def test_revoke_expired_grant_is_refused(client, keypair, monkeypatch):
+    from decimal import Decimal
+
+    from sightline import grants
+    from sightline.state import revoke
+
+    g = grants.create(network="devnet", token="SOL", symbol="SOL", daily_cap=Decimal(1), max_per_tx=None,
+                      recipients=["*"], duration_s=1, now=1.0)
+    assert revoke(g.id)["error"] == "not_active"
