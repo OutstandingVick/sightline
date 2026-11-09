@@ -4,6 +4,7 @@ description: >-
   Solana transaction firewall for Hermes. The agent can check balances, preview and
   pay on devnet, but every payment is simulated, explained, and allowed only inside
   a grant the user issued with /sightline grant (time-boxed, capped, revocable).
+  Includes a Hermes Desktop pane showing grants and a live decision feed.
   Anything else needs the user's approval or is blocked. Every decision goes to a
   hash-chained audit log. The private key never reaches the model.
 author: Outstandingvick
