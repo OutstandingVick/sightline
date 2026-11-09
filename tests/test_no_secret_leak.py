@@ -25,6 +25,8 @@ CALLS = [
     ("sightline_status", {}),
     ("sightline_balance", {}),
     ("sightline_pay", {"recipient": DEST, "amount": 0.01}),
+    ("sightline_preview", {"recipient": DEST, "amount": 0.01}),
+    ("sightline_preview", {"recipient": DEST, "amount": 1e9}),
     ("sightline_pay", {"recipient": "garbage", "amount": 1}),
     ("sightline_pay", {"recipient": DEST, "amount": 1e9}),
     ("sightline_pay", {"recipient": DEST, "amount": 1, "token": "WHAT"}),
