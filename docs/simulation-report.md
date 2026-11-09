@@ -19,6 +19,11 @@ Fields (all JSON-safe; Decimals are strings):
 | `rent_lamports` | int | Lamports moved into created accounts |
 | `recipient_received` | str \| null | What the intent's recipient gains, UI units |
 | `slot` | int \| null | Slot the simulation ran against |
+| `sol_post_lamports` | int \| null | Our SOL balance after the tx (firewall reserve check) |
+| `instructions` | list[str] | Decoded top-level instructions, e.g. `Token.TransferChecked` (firewall) |
+
+Each `token_deltas` entry also has `pre_ui`: our balance of that mint before the tx
+(firewall's 90% rule).
 
 ## Sample (devnet, "preview 1 USDC to a fresh address", and a 50 SOL overdraft)
 
