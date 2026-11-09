@@ -36,8 +36,8 @@ because the pane refetches straight after the call.
 - `hermes plugins doctor . --ci`: OK, 4 tools and 1 hook, no stale desktop copy warning.
 - `hermes plugins validate . --install-deps`: passed, including `desktop surface`.
   One note: the dashboard backend is served through the plugin host (buffered responses).
-- `pytest`: 178 passed, 2 skipped (live devnet tests are opt-in).
-  `node --test tests/js/*.test.mjs`: 5 passed.
+- `pytest`: 183 passed, 2 skipped (live devnet tests are opt-in).
+  `node --test tests/js/*.test.mjs`: 7 passed.
 
 ## Found and fixed along the way
 
