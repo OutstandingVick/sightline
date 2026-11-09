@@ -31,6 +31,7 @@ from .amounts import from_base_units
 from .tokens import short, symbol_for
 
 MAX_LOGS = 30
+MAX_LOG_CHARS = 300
 
 PROGRAM_NAMES = {
     "11111111111111111111111111111111": "System",
@@ -152,7 +153,7 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
         report.error = f"simulation RPC failed: {type(exc).__name__}: {str(exc)[:200]}"
         return report
 
-    report.logs = (value.get("logs") or [])[-MAX_LOGS:]
+    report.logs = [line[:MAX_LOG_CHARS] for line in (value.get("logs") or [])[-MAX_LOGS:]]
     report.compute_units = value.get("unitsConsumed")
     fee = _fee_for_message(wallet, msg)
     report.fee_lamports = fee if fee is not None else int(value.get("fee") or 0)
