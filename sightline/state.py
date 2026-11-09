@@ -40,6 +40,10 @@ def _wallet_part() -> dict:
     return out, settings
 
 
+def _plain(d: Decimal) -> str:
+    return format(d.normalize(), "f")  # "100", never "1E+2"
+
+
 def grant_view(g, now: float) -> dict:
     status = g.status(now)
     remaining = grants.remaining(g, now=now) if status == "active" else None
@@ -47,8 +51,8 @@ def grant_view(g, now: float) -> dict:
     return {
         "id": g.id, "status": status, "network": g.network, "token": g.token, "symbol": g.symbol,
         "daily_cap": g.daily_cap, "max_per_tx": g.max_per_tx,
-        "used_24h": None if used is None else str(used.normalize()),
-        "remaining_24h": None if remaining is None else str(remaining.normalize()),
+        "used_24h": None if used is None else _plain(used),
+        "remaining_24h": None if remaining is None else _plain(remaining),
         "recipients": list(g.recipients), "note": g.note,
         "created_at": g.created_at, "expires_at": g.expires_at, "revoked_at": g.revoked_at,
     }
