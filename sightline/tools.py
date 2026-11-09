@@ -15,7 +15,8 @@ STATUS_SCHEMA = {
     "name": "sightline_status",
     "description": (
         "Answer questions about the user's Sightline wallet setup ('what's my sightline status?'): "
-        "the Solana network, RPC URL and the wallet's public address. " + _NET_NOTE
+        "the Solana network, RPC URL, the wallet's public address and the user's spending grants "
+        "(read-only: grants can only be created or revoked by the user). " + _NET_NOTE
     ),
     "parameters": {"type": "object", "properties": {}, "required": []},
 }
@@ -57,7 +58,8 @@ PAY_SCHEMA = {
     "description": (
         "Send SOL or an SPL token from the user's Sightline wallet to a Solana address. "
         "Only call when the user clearly asked to send/pay a specific amount to a specific address. "
-        "Simulates first and sends nothing if simulation fails. Creates the recipient's token account if needed. Returns a plain-English summary, the transaction "
+        "Simulates first and sends nothing if simulation fails. Payments inside one of the user's grants go "
+        "through; anything else needs the user's approval or is blocked by the Sightline firewall. Creates the recipient's token account if needed. Returns a plain-English summary, the transaction "
         "signature and an explorer link. " + _NET_NOTE
     ),
     "parameters": _PAY_PARAMS,
@@ -90,11 +92,32 @@ def _guard(fn):
     return handler
 
 @_guard
-def sightline_status(args: dict, session_id: str = \"\") -> dict:
+def sightline_status(args: dict, session_id: str = "") -> dict:
     from .config import load_settings
 
     s = load_settings()
-    return {"network": s.network, "rpc_url": s.rpc_url, "public_key": str(s.public_key)}
+    return {"network": s.network, "rpc_url": s.rpc_url, "public_key": str(s.public_key),
+            "grants": _grant_summaries(s.network),
+            "note": "Grants are read-only here; only the user can create or revoke them with /sightline."}
+
+
+def _grant_summaries(network: str) -> list[dict]:
+    import time
+
+    from . import grants
+
+    now = time.time()
+    out = []
+    for g in grants.list_grants():
+        status = g.status(now)
+        if status != "active" and now - (g.revoked_at or g.expires_at) > 24 * 3600:
+            continue
+        out.append({"id": g.id, "status": status, "network": g.network, "token": g.symbol,
+                    "max_per_tx": g.max_per_tx, "daily_cap": g.daily_cap,
+                    "remaining_24h": str(grants.remaining(g, now=now)) if status == "active" else "0",
+                    "recipients": g.recipients, "expires_in_s": max(0, int(g.expires_at - now))})
+    return out
+
 
 @_guard
 def sightline_balance(args: dict, session_id: str = \"\") -> dict:
