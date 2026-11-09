@@ -12,6 +12,7 @@ tags: [solana, wallet, security]
 provides_tools:
   - sightline_status
   - sightline_balance
+  - sightline_preview
   - sightline_pay
 provides_hooks:
   - pre_tool_call
