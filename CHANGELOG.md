@@ -7,6 +7,9 @@
 - `dashboard/plugin_api.py`: `GET /state` (read-only) and `POST /revoke`. No route creates or
   widens a grant.
 - `plugin.sightline.audit` event after every committed audit write; rollbacks emit nothing.
+  Events don't leave the plugin host, so the pane also re-reads `/state` every 5 s.
+- Status bar shows `Sightline • offline` when the backend can't be reached.
+- `scripts/check.sh` runs every offline check; JS tests for the Desktop half.
 - Fix: grant usage shown as `100`, not `1E+2`.
 
 ## 0.4.0 — Phases 3+4: grants, firewall, audit log
