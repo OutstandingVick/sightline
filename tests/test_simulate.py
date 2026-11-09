@@ -127,3 +127,21 @@ def test_error_descriptions(err, logs, expected):
     from sightline.simulate import _describe_err
 
     assert _describe_err(err, logs) == expected
+
+
+def test_fee_falls_back_to_simulation_fee(setup, monkeypatch):
+    w, _ = setup
+    def boom(msg):
+        raise RuntimeError("stale blockhash")
+    monkeypatch.setattr(w.client, "get_fee_for_message", boom)
+    r = simulate(w, w.build_sol_transfer(str(DEST), "0.01"))
+    assert r.ok and r.fee_lamports == FEE
+
+
+def test_rpc_error_object_fails_closed(setup, cluster, monkeypatch):
+    import sightline.simulate as sim
+
+    w, _ = setup
+    monkeypatch.setattr(sim, "_post", lambda *a, **k: {"error": {"code": -32602, "message": "bad params"}})
+    r = simulate(w, w.build_sol_transfer(str(DEST), "0.01"))
+    assert not r.ok and "bad params" in r.error
