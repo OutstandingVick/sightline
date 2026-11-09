@@ -22,8 +22,9 @@ def test_status_never_leaks_secret(plugin, ctx, monkeypatch):
     plugin.register(ctx)
     raw = ctx.tools["sightline_status"]["handler"]({})
     out = json.loads(raw)
-    assert out == {"network": "devnet", "rpc_url": "https://api.devnet.solana.com",
-                   "public_key": str(kp.pubkey())}
+    assert {k: out[k] for k in ("network", "rpc_url", "public_key")} == {
+        "network": "devnet", "rpc_url": "https://api.devnet.solana.com", "public_key": str(kp.pubkey())}
+    assert out["grants"] == []
     assert secret not in raw
 
 

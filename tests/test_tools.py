@@ -38,8 +38,9 @@ def test_pay_overdraft_is_simulation_failure(tools):
     assert out["error"] == "simulation_failed" and out["sent"] is False and client.sent == []
 
 
-def test_pay_success_shape(tools):
+def test_pay_success_shape(tools, grant_any):
     handlers, client = tools
     out = json.loads(handlers["sightline_pay"]({"recipient": DEST, "amount": 0.01}))
     assert len(client.sent) == 1 and out["simulation"]["ok"] and out["sent"] is True
     assert {"summary", "signature", "explorer_url", "intent", "simulation"} <= set(out)
+    assert out["approved_by"] == f"grant {grant_any.id}"

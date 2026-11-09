@@ -90,7 +90,7 @@ def test_missing_balance_fields_fail_closed(setup, cluster):
     assert not del_fields.ok
 
 
-def test_successful_pay_returns_explanation(setup):
+def test_successful_pay_returns_explanation(setup, grant_any):
     w, _ = setup
     r = execute_intent(w, pay_intent(w, str(DEST), "0.01"))
     assert r.summary.splitlines()[0] == f"You send 0.01 SOL to {str(DEST)[:4]}…{str(DEST)[-4:]}."

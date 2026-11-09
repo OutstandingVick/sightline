@@ -34,7 +34,7 @@ def test_pay_intent_rejects(keypair, to, amount, token, code):
     assert e.value.code == code
 
 
-def test_execute_intent_receipt(keypair):
+def test_execute_intent_receipt(keypair, grant_any):
     w = Wallet(load_settings(), client=FakeClient())
     r = execute_intent(w, pay_intent(w, DEST, "0.5"))
     assert r.explorer_url == f"https://explorer.solana.com/tx/{r.signature}?cluster=devnet"

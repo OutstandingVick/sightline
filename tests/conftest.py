@@ -74,3 +74,14 @@ def db_path(tmp_path, monkeypatch):
     path = tmp_path / "sightline.db"
     monkeypatch.setenv("SIGHTLINE_DB_PATH", str(path))
     return path
+
+
+@pytest.fixture
+def grant_any():
+    """A generous SOL grant to any recipient, as if the user had typed /sightline grant."""
+    from decimal import Decimal
+
+    from sightline import grants
+
+    return grants.create(network="devnet", token="SOL", symbol="SOL", daily_cap=Decimal(100),
+                         max_per_tx=None, recipients=["*"], duration_s=3600)
