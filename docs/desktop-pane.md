@@ -33,9 +33,14 @@ public data only; `tests/test_plugin_api.py` checks the secret key never appears
 After any transaction that wrote audit rows commits (decision, send, grant
 created/revoked), Sightline calls Hermes' `broadcast_plugin_event("sightline",
 "audit")`. The pane listens for `plugin.sightline.audit` and re-reads `/state`.
-Rolled-back writes emit nothing. A refresh every 15 s also runs, because activity
-from another process (a CLI `hermes chat`, cron) is not delivered to the Desktop
-window as an event; if the SDK has no event stream at all the pane polls every 5 s.
+Rolled-back writes emit nothing.
+
+In practice the event rarely arrives. With `plugins.isolation: host` (the default
+here) Sightline's commands, tools and hooks run in the plugin-host child process,
+and that process has no relay for `broadcast_plugin_event`, so the call is dropped.
+Activity from another process (a CLI `hermes chat`, cron) never reaches the window
+either. The pane therefore also re-reads `/state` every 5 s. Measured: a grant made
+with the slash command appeared in the pane 1.9–6.4 s later.
 
 ## Enabling
 
@@ -70,6 +75,10 @@ window as an event; if the SDK has no event stream at all the pane polls every 5
   SDK page), so utility classes like `p-3` in the quick start only work when the app
   already uses them. Sightline keeps its layout in a small stylesheet that uses only
   `--ui-*` theme variables.
+- The SDK page's delivery table says tools, hooks and slash commands in the agent
+  turn reach every connected Desktop window. With `plugins.isolation: host` they run
+  in the plugin-host child, which has no event relay (`hermes_cli/plugin_host*.py`),
+  so the event is dropped silently (debug log only).
 - With `plugins.isolation: host`, `validate` reports the backend runs through the
   plugin host with buffered responses; `ctx.socket` would not work there, which is
   why Sightline uses the global event stream instead.
