@@ -54,6 +54,7 @@ class TokenDelta:
     symbol: str
     delta_ui: str  # signed Decimal as string, exact
     decimals: int
+    pre_ui: str = "0"  # our balance of this mint before the tx
 
 
 @dataclass
@@ -73,6 +74,8 @@ class SimulationReport:
     rent_lamports: int = 0  # lamports moved into newly created accounts
     recipient_received: str | None = None  # what the intent's recipient gains (UI units)
     slot: int | None = None  # slot the simulation ran against
+    sol_post_lamports: int | None = None  # our SOL balance after the tx
+    instructions: list[str] = field(default_factory=list)  # decoded top-level kinds, e.g. "Token.TransferChecked"
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -97,6 +100,43 @@ def message_programs(msg: MessageV0) -> list[str]:
         if pid not in seen:
             seen.append(pid)
     return seen
+
+
+_SYSTEM_IX = {0: "CreateAccount", 1: "Assign", 2: "Transfer", 3: "CreateAccountWithSeed",
+              4: "AdvanceNonceAccount", 5: "WithdrawNonceAccount", 6: "InitializeNonceAccount",
+              7: "AuthorizeNonceAccount", 8: "Allocate", 9: "AllocateWithSeed", 10: "AssignWithSeed",
+              11: "TransferWithSeed", 12: "UpgradeNonceAccount"}
+_TOKEN_IX = {0: "InitializeMint", 1: "InitializeAccount", 2: "InitializeMultisig", 3: "Transfer",
+             4: "Approve", 5: "Revoke", 6: "SetAuthority", 7: "MintTo", 8: "Burn", 9: "CloseAccount",
+             10: "FreezeAccount", 11: "ThawAccount", 12: "TransferChecked", 13: "ApproveChecked",
+             14: "MintToChecked", 15: "BurnChecked", 16: "InitializeAccount2", 17: "SyncNative",
+             18: "InitializeAccount3", 20: "InitializeMint2"}
+_ATA_IX = {0: "Create", 1: "CreateIdempotent", 2: "RecoverNested"}
+_CB_IX = {0: "RequestUnits", 1: "RequestHeapFrame", 2: "SetComputeUnitLimit", 3: "SetComputeUnitPrice",
+          4: "SetLoadedAccountsDataSizeLimit"}
+
+
+def decode_instruction(program_id: str, data: bytes) -> str:
+    """Name a top-level instruction as "<Program>.<Kind>" (Unknown when it can't be decoded)."""
+    name = PROGRAM_NAMES.get(program_id)
+    if name is None:
+        return f"unknown {short(program_id)}"
+    if name == "System":
+        kind = _SYSTEM_IX.get(int.from_bytes(data[:4], "little")) if len(data) >= 4 else None
+    elif name in ("Token", "Token-2022"):
+        kind = _TOKEN_IX.get(data[0]) if data else None
+    elif name == "Associated Token":
+        kind = _ATA_IX.get(data[0] if data else 0)
+    elif name == "Compute Budget":
+        kind = _CB_IX.get(data[0]) if data else None
+    else:  # Memo
+        kind = "Memo"
+    return f"{name}.{kind or 'Unknown'}"
+
+
+def instruction_kinds(msg: MessageV0) -> list[str]:
+    keys = msg.account_keys
+    return [decode_instruction(str(keys[ix.program_id_index]), bytes(ix.data)) for ix in msg.instructions]
 
 
 def message_writable(msg: MessageV0) -> list[str]:
@@ -157,6 +197,7 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
         programs=programs,
         unknown_programs=[p for p in programs if p not in PROGRAM_NAMES],
         writable_accounts=message_writable(msg),
+        instructions=instruction_kinds(msg),
     )
     watched = list(dict.fromkeys([owner, *getattr(built, "watch", []), *report.writable_accounts]))
     try:
@@ -182,6 +223,7 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
         return report
 
     report.sol_delta_lamports = post[0] - pre[0] if keys and keys[0] == owner else _delta(keys, pre, post, owner)
+    report.sol_post_lamports = post[keys.index(owner)] if owner in keys else None
 
     # Accounts that went from 0 lamports to funded *with data* were created by this tx.
     spaces = {addr: (acc or {}).get("space", 0) for addr, acc in zip(watched, value.get("accounts") or [])}
@@ -201,15 +243,16 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
         after = int(post_t[idx]["uiTokenAmount"]["amount"]) if idx in post_t else 0
         delta = from_base_units(after - before, decimals)
         if entry.get("owner") == owner and after != before:
-            slot = by_mint.setdefault(entry["mint"], [Decimal(0), decimals])
+            slot = by_mint.setdefault(entry["mint"], [Decimal(0), decimals, Decimal(0)])
             slot[0] += delta
+            slot[2] += from_base_units(before, decimals)
         if recipient and entry.get("owner") == recipient:
             received = (received or Decimal(0)) + delta
     network = wallet.settings.network
     report.token_deltas = [
         TokenDelta(mint=m, symbol=symbol_for(m, network) or short(m),
-                   delta_ui=_fmt(d), decimals=dec)
-        for m, (d, dec) in by_mint.items()
+                   delta_ui=_fmt(d), decimals=dec, pre_ui=_fmt(pre_amt))
+        for m, (d, dec, pre_amt) in by_mint.items()
     ]
     if recipient and received is None and recipient in keys:
         i = keys.index(recipient)
