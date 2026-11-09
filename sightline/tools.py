@@ -120,12 +120,12 @@ def _grant_summaries(network: str) -> list[dict]:
 
 
 @_guard
-def sightline_balance(args: dict, session_id: str = \"\") -> dict:
+def sightline_balance(args: dict, session_id: str = "") -> dict:
     w = _wallet()
     return {"network": w.settings.network, "public_key": str(w.owner), **w.get_balances()}
 
 @_guard
-def sightline_pay(args: dict, session_id: str = \"\") -> dict:
+def sightline_pay(args: dict, session_id: str = "") -> dict:
     from .gate import cache_key, take
     from .intents import execute_intent, pay_intent
 
@@ -135,7 +135,7 @@ def sightline_pay(args: dict, session_id: str = \"\") -> dict:
     return execute_intent(w, intent, evaluation=evaluation).to_dict()
 
 @_guard
-def sightline_preview(args: dict, session_id: str = \"\") -> dict:
+def sightline_preview(args: dict, session_id: str = "") -> dict:
     from .intents import pay_intent, preview_intent
 
     w = _wallet()

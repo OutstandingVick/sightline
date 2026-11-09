@@ -18,6 +18,10 @@ class FakeCtx:
     def register_hook(self, hook_name, callback, **kwargs):
         self.hooks.setdefault(hook_name, []).append(callback)
 
+    def register_command(self, name, handler, description="", args_hint=""):
+        self.commands = getattr(self, "commands", {})
+        self.commands[name] = handler
+
 
 @pytest.fixture(scope="session")
 def plugin():
@@ -62,3 +66,11 @@ def cluster(monkeypatch, request):
             continue
         monkeypatch.setattr(mod, "_post", fake)
     return fake
+
+
+@pytest.fixture(autouse=True)
+def db_path(tmp_path, monkeypatch):
+    """Each test gets its own grants/audit database."""
+    path = tmp_path / "sightline.db"
+    monkeypatch.setenv("SIGHTLINE_DB_PATH", str(path))
+    return path
