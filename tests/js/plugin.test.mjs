@@ -85,3 +85,19 @@ test('the pane only ever POSTs to /revoke', () => {
   const posts = [...SOURCE.matchAll(/ctx\.rest\('([^']+)',\s*\{\s*method:\s*'POST'/g)].map(m => m[1])
   assert.deepEqual(posts, ['/revoke'])
 })
+
+test('styles use theme variables, never hardcoded colors', () => {
+  const css = SOURCE.match(/const CSS = `([\s\S]*?)`/)[1]
+  assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(|oklch\(/i)
+  assert.match(css, /var\(--ui-accent\)/)
+})
+
+test('the stylesheet is removed on dispose', async () => {
+  const { plugin } = await load()
+  let removed = false
+  globalThis.document = { createElement: () => ({ remove: () => { removed = true } }), head: { append() {} } }
+  const ctx = fakeCtx()
+  plugin.register(ctx)
+  ctx.disposers.forEach(fn => fn())
+  assert.ok(removed)
+})
