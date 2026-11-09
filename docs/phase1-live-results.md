@@ -7,6 +7,7 @@
 | `execute_intent` SPL transfer to an address with no ATA | `2CiPjsLz34kNQKCoHGDE7RgU2dEiT3pziW6VK67fakWDc5cSZY2srru8DG7M7a1xzH4ZmBXzWv9jYMg1F3iH586b` |
 | Hermes chat: "send 0.01 SOL to …" | `5v82ZkT2H1dB8fbJ8B1kuvgpJALABpNmMDkYVPkEMdtESkVVsE8dYVbNW15qnCD6fabUAyhHepmvj2thiUkRQeCe` |
 | Hermes chat: "send 1 of token 53vs… to …" (no ATA) | `4dXSTT589u3DeoAXwsEMLaCeFVnF1dZ9wzeuxvo1ZyRKzzHhAadqdF8FcX2UKSiCQ4ibvFH52zoHPCa1DDzMqDqK` |
+| Hermes chat: "send 1 USDC to …" (fresh address, no ATA) | `3DekijKkoYf3TQQVNGPi52Wyxe1wzdsxV2TYwLheZS43Bm4XfLp6FDh3TMx2uMuRxJNK91tYeosD5cbvQ7cv5ezZ` |
 | Hermes chat: "what's my balance?" | called `sightline_balance`; SOL + test token listed |
 
 Explorer: `https://explorer.solana.com/tx/<sig>?cluster=devnet`
