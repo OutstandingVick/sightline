@@ -74,7 +74,7 @@ def _guard(fn):
 
     def handler(args: dict, **kwargs) -> str:
         try:
-            return json.dumps(fn(args or {}))
+            return json.dumps(fn(args or {}, session_id=str(kwargs.get("session_id") or "")))
         except ModuleNotFoundError as exc:
             return json.dumps({"error": "missing_dependency",
                                "message": f"{exc.name!r} not installed; enable the plugin and restart Hermes"})
@@ -90,27 +90,29 @@ def _guard(fn):
     return handler
 
 @_guard
-def sightline_status(args: dict) -> dict:
+def sightline_status(args: dict, session_id: str = \"\") -> dict:
     from .config import load_settings
 
     s = load_settings()
     return {"network": s.network, "rpc_url": s.rpc_url, "public_key": str(s.public_key)}
 
 @_guard
-def sightline_balance(args: dict) -> dict:
+def sightline_balance(args: dict, session_id: str = \"\") -> dict:
     w = _wallet()
     return {"network": w.settings.network, "public_key": str(w.owner), **w.get_balances()}
 
 @_guard
-def sightline_pay(args: dict) -> dict:
+def sightline_pay(args: dict, session_id: str = \"\") -> dict:
+    from .gate import cache_key, take
     from .intents import execute_intent, pay_intent
 
+    evaluation = take(cache_key(args, session_id))  # the firewall hook's verdict for this exact call
     w = _wallet()
     intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
-    return execute_intent(w, intent).to_dict()
+    return execute_intent(w, intent, evaluation=evaluation).to_dict()
 
 @_guard
-def sightline_preview(args: dict) -> dict:
+def sightline_preview(args: dict, session_id: str = \"\") -> dict:
     from .intents import pay_intent, preview_intent
 
     w = _wallet()
