@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 — Phase 5: Desktop pane
+- `desktop/plugin.js`: Hermes Desktop pane with network badge, wallet + balances, active grants
+  (usage bar, countdown, Revoke) and a live, newest-first activity feed with explorer links.
+- ⌘K "Sightline: Open firewall" and a status-bar item (`Sightline • N grants • last: …`).
+- `dashboard/plugin_api.py`: `GET /state` (read-only) and `POST /revoke`. No route creates or
+  widens a grant.
+- `plugin.sightline.audit` event after every committed audit write; rollbacks emit nothing.
+- Fix: grant usage shown as `100`, not `1E+2`.
+
 ## 0.4.0 — Phases 3+4: grants, firewall, audit log
 - Human-only `/sightline` command: grant, grants, revoke (incl. picker / all), log, verify.
 - Grants: per token and network, named recipients (or explicit `any`), per-tx max, rolling 24h
