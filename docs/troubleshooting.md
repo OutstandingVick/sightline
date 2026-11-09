@@ -17,3 +17,17 @@ so Hermes installs `solana`/`solders`, then restart Hermes.
 (usually insufficient SOL or tokens). Use `sightline_preview` to dry-run.
 
 **Airdrop rate-limited.** Use https://faucet.solana.com.
+
+**Every payment asks for approval.** No grant covers it. `/sightline grants` shows
+what is active and how much is left; the approval prompt says why no grant matched.
+
+**"needs human approval … but none was given".** The approval belongs to one
+exact call in one session and is used once. Ask the agent to send again so Hermes
+can ask you.
+
+**Payments fail in `hermes chat -q`.** Single-query mode has nobody to approve, so
+Hermes blocks APPROVE requests. Issue a grant, or use an interactive session. Don't
+set `approvals.single_query_mode: approve` if you rely on Sightline's approvals.
+
+**`/sightline verify` reports a broken chain.** An audit entry was edited or
+deleted outside Sightline. Treat grants and history as untrusted until checked.
