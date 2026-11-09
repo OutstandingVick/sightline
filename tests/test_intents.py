@@ -38,4 +38,4 @@ def test_execute_intent_receipt(keypair):
     w = Wallet(load_settings(), client=FakeClient())
     r = execute_intent(w, pay_intent(w, DEST, "0.5"))
     assert r.explorer_url == f"https://explorer.solana.com/tx/{r.signature}?cluster=devnet"
-    assert "0.5 SOL" in r.summary and "devnet" in r.summary
+    assert r.summary.startswith("You send 0.5 SOL to ") and r.simulation.ok

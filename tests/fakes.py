@@ -74,7 +74,8 @@ class FakeCluster:
     lamports: {address: lamports}; tokens: {token_account: {"mint", "owner", "amount", "decimals"}}
     """
 
-    def __init__(self, lamports=None, tokens=None):
+    def __init__(self, lamports=None, tokens=None, payer_lamports=10**10):
+        self.payer_lamports = payer_lamports
         self.lamports = dict(lamports or {})
         self.tokens = {k: dict(v) for k, v in (tokens or {}).items()}
         self.calls = []
@@ -92,7 +93,7 @@ class FakeCluster:
         tx = VersionedTransaction.from_bytes(base64.b64decode(body["params"][0]))
         msg = tx.message
         keys = [str(k) for k in msg.account_keys]
-        lam = {k: self.lamports.get(k, 0) for k in keys}
+        lam = {k: self.lamports.get(k, self.payer_lamports if i == 0 else 0) for i, k in enumerate(keys)}
         tok = {k: dict(v) for k, v in self.tokens.items()}
         pre_lam = dict(lam)
         pre_tok = {k: dict(v) for k, v in tok.items()}

@@ -44,3 +44,21 @@ def keypair(monkeypatch):
     monkeypatch.delenv("SIGHTLINE_RPC_URL", raising=False)
     monkeypatch.delenv("SIGHTLINE_ALLOW_MAINNET", raising=False)
     return kp
+
+
+@pytest.fixture(autouse=True)
+def cluster(monkeypatch, request):
+    """Every test simulates against an in-memory cluster (never the network)."""
+    import importlib
+
+    from fakes import FakeCluster
+
+    request.getfixturevalue("plugin")  # make sure the Hermes-style module copy exists too
+    fake = FakeCluster()
+    for name in ("sightline.simulate", "sightline_plugin.sightline.simulate"):
+        try:
+            mod = importlib.import_module(name)
+        except ImportError:
+            continue
+        monkeypatch.setattr(mod, "_post", fake)
+    return fake

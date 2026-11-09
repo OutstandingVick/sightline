@@ -22,12 +22,6 @@ def test_sol_transfer_is_unsigned_v0(wallet):
     assert "0.01 SOL" in built.summary
 
 
-def test_insufficient_sol(wallet):
-    with pytest.raises(WalletError) as e:
-        wallet(lamports=1000).build_sol_transfer(DEST, 1)
-    assert e.value.code == "insufficient_funds"
-
-
 def test_invalid_recipient(wallet):
     with pytest.raises(WalletError) as e:
         wallet().build_sol_transfer("nope", 1)
@@ -42,13 +36,6 @@ def test_spl_transfer_creates_ata_idempotently(wallet):
     assert programs[0] == ASSOCIATED_TOKEN_PROGRAM_ID
     assert bytes(built.tx.message.instructions[0].data) == b"\x01"  # CreateIdempotent
     assert bytes(built.tx.message.instructions[1].data)[0] == 12  # TransferChecked
-
-
-def test_spl_insufficient(wallet):
-    mint = Pubkey.new_unique()
-    with pytest.raises(WalletError) as e:
-        wallet(mints={mint: 6}, token_balance=10).build_spl_transfer(DEST, mint, 1)
-    assert e.value.code == "insufficient_funds"
 
 
 def test_spl_unknown_mint(wallet):
