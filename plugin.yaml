@@ -1,5 +1,5 @@
 name: sightline
-version: "0.4.0"
+version: "0.5.0"
 description: >-
   Solana transaction firewall for Hermes. The agent can check balances, preview and
   pay on devnet, but every payment is simulated, explained, and allowed only inside
