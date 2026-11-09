@@ -45,11 +45,26 @@ class Receipt:
     explorer_url: str
     summary: str
     simulation: SimulationReport | None = None  # what was approved; Phase 4 firewall input
+    approved_by: str = ""  # "grant g_xxxx" or "human"
 
     def to_dict(self) -> dict:
-        return {"summary": self.summary, "sent": True, "signature": self.signature,
+        return {"summary": self.summary, "sent": True, "approved_by": self.approved_by,
+                "signature": self.signature,
                 "explorer_url": self.explorer_url, "intent": asdict(self.intent),
                 "simulation": self.simulation.to_dict() if self.simulation else None}
+
+
+class Blocked(WalletError):
+    """The firewall refused this payment; nothing was signed or sent."""
+
+    def __init__(self, decision, preview: "Preview"):
+        super().__init__("blocked", f"Sightline blocked: {decision.reason}\n{preview.explanation}")
+        self.decision = decision
+        self.preview = preview
+
+    def to_dict(self) -> dict:
+        return {"error": self.code, "message": self.message, "sent": False,
+                "decision": self.decision.to_dict(), "simulation": self.preview.simulation.to_dict()}
 
 
 class SimulationFailed(WalletError):
@@ -101,13 +116,60 @@ def preview_intent(wallet: Wallet, intent: Intent) -> Preview:
     return _preview(wallet, intent)[1]
 
 
-def execute_intent(wallet: Wallet, intent: Intent) -> Receipt:
-    built, preview = _preview(wallet, intent)
-    if not preview.simulation.ok:
-        raise SimulationFailed(preview)
-    # Phase 4: firewall verdict(intent, preview.simulation) → allow / approve / block
-    signature = wallet.sign_and_send(built)
+def execute_intent(wallet: Wallet, intent: Intent, evaluation=None) -> Receipt:
+    """Second gate + send. ``evaluation`` is the hook's cached result for this exact call.
+
+    The firewall is re-run here regardless of what the hook said. ALLOW reserves spend
+    against the grant atomically (same transaction as the cap check). APPROVE proceeds
+    only if the hook asked a human about this call (Hermes runs the tool only after a
+    yes); without that evidence it is a BLOCK.
+    """
+    from . import audit
+    from .db import transaction
+    from .firewall import ALLOW, APPROVE, BLOCK, Decision, decide
+    from .gate import log_decision
+
+    if evaluation is not None and evaluation.intent == intent:
+        built, preview = evaluation.built, evaluation.preview
+        hook_verdict = evaluation.decision.verdict
+    else:
+        built, preview = _preview(wallet, intent)
+        hook_verdict = None
+    report = preview.simulation
     settings: Settings = wallet.settings
+    intent_d = asdict(intent)
+
+    refusal = None
+    with transaction() as conn:
+        decision = decide(intent, report, settings, conn=conn)
+        if decision.verdict == APPROVE and hook_verdict != APPROVE:
+            decision = Decision(BLOCK, f"needs human approval ({decision.reason}) but none was given",
+                                None, "approval_missing")
+        log_decision(intent_d, decision, preview.explanation, "execute", conn=conn)
+        if decision.verdict == BLOCK:
+            refusal = decision
+        else:
+            approval = "grant" if decision.verdict == ALLOW else "human"
+            seq = audit.append("execute", {
+                "intent": intent_d, "grant_id": decision.grant_id, "approval": approval,
+                "amount": intent.amount, "token": "SOL" if intent.kind == "transfer_sol" else intent.mint,
+                "explanation": preview.explanation,
+                "simulation": {k: report.to_dict()[k] for k in (
+                    "fee_lamports", "sol_delta_lamports", "token_deltas", "programs", "slot")},
+            }, conn=conn)
+    if refusal is not None:
+        if not report.ok:
+            raise SimulationFailed(preview)
+        raise Blocked(refusal, preview)
+
+    try:
+        signature = wallet.sign_and_send(built)
+    except Exception as exc:  # release the reserved spend; re-raise for the tool layer
+        audit.append("failed", {"ref": seq, "error": getattr(exc, "code", type(exc).__name__),
+                                "message": getattr(exc, "message", "")})
+        raise
+    audit.append("sent", {"ref": seq, "signature": signature, "explorer_url": settings.explorer_url(signature)})
     return Receipt(intent=intent, signature=signature,
                    explorer_url=settings.explorer_url(signature),
-                   summary=preview.explanation, simulation=preview.simulation)
+                   summary=preview.explanation, simulation=report,
+                   approved_by=f"grant {decision.grant_id}" if decision.verdict == ALLOW else "human")

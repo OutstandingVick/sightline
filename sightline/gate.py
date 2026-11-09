@@ -65,11 +65,10 @@ def take(key: str) -> Evaluation | None:
     return ev
 
 
-def _log_decision(intent, decision: Decision, explanation: str, source: str) -> None:
+def log_decision(intent: dict, decision: Decision, explanation: str, source: str, conn=None) -> None:
     try:
-        audit.append("decision", {"source": source, **decision.to_dict(),
-                                  "intent": getattr(intent, "__dict__", None) or str(intent),
-                                  "explanation": explanation})
+        audit.append("decision", {"source": source, **decision.to_dict(), "intent": intent,
+                                  "explanation": explanation}, conn=conn)
     except Exception:  # logging must never turn a block into an allow
         logger.exception("sightline: audit write failed")
 
@@ -101,7 +100,7 @@ def _evaluate_hook(args: dict, session_id: str):
         return {"action": "block", "message": f"Sightline blocked: {message}"}
     decision = decide(intent, preview.simulation, wallet.settings)
     remember(cache_key(args, session_id), Evaluation(time.time(), intent, built, preview, decision))
-    _log_decision(asdict(intent), decision, preview.explanation, "hook")
+    log_decision(asdict(intent), decision, preview.explanation, "hook")
     if decision.verdict == BLOCK:
         return {"action": "block", "message": f"Sightline blocked: {decision.reason}\n{preview.explanation}"}
     if decision.verdict == APPROVE:
