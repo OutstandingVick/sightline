@@ -22,8 +22,10 @@ const ID = 'sightline'
 const PANE_ID = `${ID}:pane`
 const STATE_KEY = [ID, 'state']
 const AUDIT_EVENT = `plugin.${ID}.audit`
-const POLL_MS = 5000 // only when the event stream is unavailable
-const SAFETY_MS = 15000 // activity from other processes (CLI, cron) never reaches this window as an event
+// Events make updates instant where they arrive. They do not arrive from the plugin host
+// (plugins.isolation: host, the default) or from another process (CLI, cron), so the pane
+// also re-reads /state every 5s.
+const POLL_MS = 5000
 
 // Disk plugins are not scanned by Tailwind, so layout lives here. Colors come only
 // from the app's theme variables, so light/dark and custom themes just work.
@@ -82,11 +84,11 @@ function useNow(ms = 1000) {
   return now
 }
 
-function makeStateQuery(ctx, live) {
+function makeStateQuery(ctx) {
   return {
     queryKey: STATE_KEY,
     queryFn: () => ctx.rest('/state'),
-    refetchInterval: live ? SAFETY_MS : POLL_MS,
+    refetchInterval: POLL_MS,
     refetchOnWindowFocus: true,
     retry: 1
   }
@@ -234,8 +236,8 @@ function Activity({ items, ctx, state }) {
 
 // ── pane + status bar ───────────────────────────────────────────────────────
 
-function Pane({ ctx, live }) {
-  const q = useQuery(makeStateQuery(ctx, live))
+function Pane({ ctx }) {
+  const q = useQuery(makeStateQuery(ctx))
   if (q.isLoading) return jsx('div', { className: 'sl-pane', children: jsx('div', { className: 'sl-scroll sl-muted', children: 'Loading…' }) })
   if (q.error || !q.data) {
     return jsx('div', { className: 'sl-pane', children: jsx('div', { className: 'sl-scroll', children: jsx(EmptyState, {
@@ -251,8 +253,8 @@ function Pane({ ctx, live }) {
   ] }) })
 }
 
-function StatusItem({ ctx, live }) {
-  const { data } = useQuery(makeStateQuery(ctx, live))
+function StatusItem({ ctx }) {
+  const { data } = useQuery(makeStateQuery(ctx))
   const now = Date.now() / 1000
   const n = data ? data.grants.filter(g => g.status === 'active' && g.expires_at > now).length : 0
   const last = data && data.recent_audit.find(e => e.event === 'decision')
@@ -271,16 +273,15 @@ export default {
     document.head.append(style)
     ctx.onDispose(() => style.remove())
 
-    const live = typeof ctx.onEvent === 'function'
-    if (live) ctx.onEvent(AUDIT_EVENT, () => queryClient.invalidateQueries({ queryKey: STATE_KEY }))
+    if (typeof ctx.onEvent === 'function') ctx.onEvent(AUDIT_EVENT, () => queryClient.invalidateQueries({ queryKey: STATE_KEY }))
 
     ctx.registerMany([
       { id: 'pane', area: PANES_AREA, title: 'Sightline',
-        data: { placement: 'right', width: '340px' }, render: () => jsx(Pane, { ctx, live }) },
+        data: { placement: 'right', width: '340px' }, render: () => jsx(Pane, { ctx }) },
       { id: 'open', area: PALETTE_AREA,
         data: { id: 'sightline.open', label: 'Sightline: Open firewall', keywords: ['sightline', 'solana', 'firewall', 'grants', 'wallet'],
           run: () => host.revealPane(PANE_ID) } },
-      { id: 'status', area: STATUSBAR_AREAS.right, order: 140, render: () => jsx(StatusItem, { ctx, live }) }
+      { id: 'status', area: STATUSBAR_AREAS.right, order: 140, render: () => jsx(StatusItem, { ctx }) }
     ])
   }
 }
