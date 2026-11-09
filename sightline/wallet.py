@@ -10,7 +10,7 @@ All transactions are v0 ``VersionedTransaction``s.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 
 import httpx
@@ -41,7 +41,6 @@ from .tokens import AddressError, parse_address, short, symbol_for
 logger = logging.getLogger(__name__)
 
 MINT_DECIMALS_OFFSET = 44  # SPL Mint layout: authority option(36) + supply(8) → decimals
-FEE_BUFFER_LAMPORTS = 10_000
 
 
 class WalletError(Exception):
@@ -64,6 +63,7 @@ class BuiltTx:
     instructions: list[Instruction]
     last_valid_block_height: int
     summary: str
+    watch: list[str] = field(default_factory=list)  # accounts simulation should report on
 
 
 @dataclass
@@ -145,24 +145,21 @@ class Wallet:
         value = self._rpc(self.client.get_latest_blockhash, Confirmed).value
         return value.blockhash, value.last_valid_block_height
 
-    def _compile(self, instructions: list[Instruction], summary: str) -> BuiltTx:
+    def _compile(self, instructions: list[Instruction], summary: str, watch: list[str] | None = None) -> BuiltTx:
         blockhash, last_valid = self._blockhash()
         msg = MessageV0.try_compile(self.owner, instructions, [], blockhash)
         tx = VersionedTransaction.populate(msg, [Signature.default()])
-        return BuiltTx(tx=tx, instructions=instructions, last_valid_block_height=last_valid, summary=summary)
+        return BuiltTx(tx=tx, instructions=instructions, last_valid_block_height=last_valid,
+                       summary=summary, watch=list(watch or []))
 
     def build_sol_transfer(self, to: str, amount_sol) -> BuiltTx:
         self._check_cluster()
         dest = _address(to, "recipient")
         lamports = _units(amount_sol, SOL_DECIMALS)
-        balance = self._rpc(self.client.get_balance, self.owner).value
-        if lamports + FEE_BUFFER_LAMPORTS > balance:
-            raise WalletError(
-                "insufficient_funds",
-                f"need {from_base_units(lamports, 9)} SOL plus fees, have {from_base_units(balance, 9)} SOL",
-            )
+        # Balance is not pre-checked here: simulation is the single gate (Phase 2).
         ix = transfer(TransferParams(from_pubkey=self.owner, to_pubkey=dest, lamports=lamports))
-        return self._compile([ix], f"send {from_base_units(lamports, 9).normalize()} SOL to {dest}")
+        return self._compile([ix], f"send {from_base_units(lamports, 9).normalize()} SOL to {dest}",
+                             watch=[str(self.owner), str(dest)])
 
     def build_spl_transfer(self, to: str, mint: str | Pubkey, amount) -> BuiltTx:
         self._check_cluster()
@@ -172,13 +169,6 @@ class Wallet:
         units = _units(amount, m.decimals)
         label = symbol_for(str(mint_pk), self.settings.network) or short(str(mint_pk))
         source = get_associated_token_address(self.owner, mint_pk, m.program_id)
-        have = self._token_balance(source)
-        if units > have:
-            raise WalletError(
-                "insufficient_funds",
-                f"need {from_base_units(units, m.decimals).normalize()} {label}, wallet holds "
-                f"{from_base_units(have, m.decimals).normalize()} {label}",
-            )
         dest = get_associated_token_address(dest_owner, mint_pk, m.program_id)
         ixs = [
             create_idempotent_associated_token_account(self.owner, dest_owner, mint_pk, m.program_id),
@@ -187,18 +177,13 @@ class Wallet:
                 owner=self.owner, amount=units, decimals=m.decimals,
             )),
         ]
-        return self._compile(ixs, f"send {from_base_units(units, m.decimals).normalize()} {label} to {dest_owner}")
-
-    def _token_balance(self, token_account: Pubkey) -> int:
-        info = self._rpc(self.client.get_account_info, token_account).value
-        if info is None:
-            return 0
-        return int(self._rpc(self.client.get_token_account_balance, token_account).value.amount)
+        return self._compile(ixs, f"send {from_base_units(units, m.decimals).normalize()} {label} to {dest_owner}",
+                             watch=[str(self.owner), str(source), str(dest_owner), str(dest)])
 
     # -- send ----------------------------------------------------------------
 
     def _rebuild(self, built: BuiltTx) -> BuiltTx:
-        return self._compile(built.instructions, built.summary)
+        return self._compile(built.instructions, built.summary, built.watch)
 
     def sign_and_send(self, built: BuiltTx) -> str:
         """Sign with the wallet keypair, send, confirm at "confirmed". Returns the signature.
