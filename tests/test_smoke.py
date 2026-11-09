@@ -30,3 +30,9 @@ def test_status_never_leaks_secret(plugin, ctx, monkeypatch):
 def test_hook_allows(plugin, ctx):
     plugin.register(ctx)
     assert ctx.hooks["pre_tool_call"][0](tool_name="sightline_status", args={}) is None
+
+
+def test_every_tool_description_states_devnet_default(plugin, ctx):
+    plugin.register(ctx)
+    for name, tool in ctx.tools.items():
+        assert "devnet by default" in tool["schema"]["description"], name
