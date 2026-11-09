@@ -67,7 +67,9 @@ def _guard(fn):
             return json.dumps({"error": "missing_dependency",
                                "message": f"{exc.name!r} not installed; enable the plugin and restart Hermes"})
         except Exception as exc:
-            if hasattr(exc, "code") and hasattr(exc, "message"):  # WalletError / ConfigError
+            if hasattr(exc, "to_dict"):  # WalletError, SimulationFailed (with report)
+                return json.dumps(exc.to_dict())
+            if hasattr(exc, "code") and hasattr(exc, "message"):  # ConfigError
                 return json.dumps({"error": exc.code, "message": exc.message})
             logger.warning("sightline: %s failed: %s", fn.__name__, type(exc).__name__)
             return json.dumps({"error": "internal_error", "message": type(exc).__name__})
