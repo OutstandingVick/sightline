@@ -95,3 +95,11 @@ def test_successful_pay_returns_explanation(setup):
     assert r.summary.splitlines()[0] == f"You send 0.01 SOL to {str(DEST)[:4]}…{str(DEST)[-4:]}."
     assert "Network fee ≈ 0.000005 SOL. Programs: System." in r.summary
     assert r.simulation.ok and r.explorer_url.endswith("?cluster=devnet")
+
+
+def test_report_round_trips_through_dict(setup):
+    from sightline.simulate import SimulationReport
+
+    w, mint = setup
+    r = simulate(w, w.build_spl_transfer(str(DEST), mint, 1), recipient=str(DEST))
+    assert SimulationReport.from_dict(r.to_dict()) == r

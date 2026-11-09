@@ -76,6 +76,14 @@ class SimulationReport:
     def to_dict(self) -> dict:
         return asdict(self)
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "SimulationReport":
+        """Inverse of to_dict, for the audit log and firewall (Phase 4)."""
+        data = dict(data)
+        data["token_deltas"] = [TokenDelta(**t) for t in data.get("token_deltas") or []]
+        known = {f for f in cls.__dataclass_fields__}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
     def token_delta(self, mint: str) -> Decimal:
         return sum((Decimal(t.delta_ui) for t in self.token_deltas if t.mint == mint), Decimal(0))
 
