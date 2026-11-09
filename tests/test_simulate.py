@@ -104,3 +104,13 @@ def test_report_round_trips_through_dict(setup):
     w, mint = setup
     r = simulate(w, w.build_spl_transfer(str(DEST), mint, 1), recipient=str(DEST))
     assert SimulationReport.from_dict(r.to_dict()) == r
+
+
+def test_writable_accounts_follow_message_header(setup):
+    from sightline.simulate import message_writable
+
+    w, mint = setup
+    msg = w.build_spl_transfer(str(DEST), mint, 1).tx.message
+    writable = message_writable(msg)
+    readonly = {"11111111111111111111111111111111", str(mint), str(DEST)}
+    assert writable[0] == str(w.owner) and not readonly & set(writable)
