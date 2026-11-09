@@ -31,3 +31,18 @@ set `approvals.single_query_mode: approve` if you rely on Sightline's approvals.
 
 **`/sightline verify` reports a broken chain.** An audit entry was edited or
 deleted outside Sightline. Treat grants and history as untrusted until checked.
+
+**No Sightline pane in Desktop.** Desktop halves ship off: turn Sightline on in
+**Capabilities → Plugins**, then ⌘K → *Sightline: Open firewall*. If it still
+doesn't load, check `~/.hermes/desktop-plugins/sightline/plugin.js` exists
+(**Rescan** refreshes the copy) and tail `hermes logs gui -f`.
+
+**Pane says "Sightline backend unavailable".** The `/api/plugins/sightline/` routes
+are not mounted: `sightline` must be in `plugins.enabled`, and the gateway restarted
+after install (`hermes gateway restart`).
+
+**Pane lags a few seconds behind.** Expected: it re-reads every 5 s, because events
+from the plugin host don't reach Desktop. Revokes from the pane show at once.
+
+**Old messages after updating Sightline.** A long-running gateway or plugin host
+keeps the previous code. Run `hermes gateway restart`.
