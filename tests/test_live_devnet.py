@@ -7,7 +7,7 @@ from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
 from sightline.config import load_settings
-from sightline.intents import execute_intent, pay_intent
+from sightline.intents import execute_intent, pay_intent, preview_intent
 from sightline.wallet import Wallet
 
 pytestmark = pytest.mark.skipif(os.environ.get("SIGHTLINE_LIVE_TESTS") != "1",
@@ -22,3 +22,20 @@ def test_send_0_001_sol_on_devnet():
     receipt = execute_intent(w, pay_intent(w, dest, "0.001"))
     print(f"\nlive signature: {receipt.signature}\n{receipt.explorer_url}")
     assert w.client.get_balance(Pubkey.from_string(dest)).value == 1_000_000
+
+
+def test_preview_matches_onchain_change():
+    settings = load_settings()
+    assert settings.network == "devnet"
+    w = Wallet(settings)
+    dest = str(Keypair().pubkey())
+    intent = pay_intent(w, dest, "0.001")
+    preview = preview_intent(w, intent)
+    assert preview.simulation.ok, preview.explanation
+    before = w.client.get_balance(w.owner).value
+    receipt = execute_intent(w, intent)
+    after = w.client.get_balance(w.owner).value
+    print(f"\npreview: {preview.explanation}\nlive signature: {receipt.signature}")
+    actual = after - before
+    # Simulated delta includes the fee; allow only fee-sized drift (priority fees, rounding).
+    assert abs(actual - preview.simulation.sol_delta_lamports) <= preview.simulation.fee_lamports
