@@ -81,6 +81,11 @@ every firewall decision. Turn it on in **Capabilities → Plugins**; open it wit
 ⌘K → *Sightline: Open firewall* or the status-bar item. The pane can revoke a
 grant but never create or widen one. See [docs/desktop-pane.md](docs/desktop-pane.md).
 
+| Light | Dark |
+|---|---|
+| ![ALLOW and send](docs/screenshots/03-allow-sent-light.png) | ![ALLOW and send, dark](docs/screenshots/03-allow-sent-dark.png) |
+| ![BLOCK](docs/screenshots/04-block-light.png) | ![BLOCK, dark](docs/screenshots/04-block-dark.png) |
+
 ## Install (local)
 
 ```bash
@@ -136,7 +141,7 @@ hermes plugins validate . --install-deps
 - [Security model](docs/security-model.md)
 - [Desktop pane](docs/desktop-pane.md)
 - [Troubleshooting](docs/troubleshooting.md)
-- Live results: [Phase 1](docs/phase1-live-results.md), [Phase 2](docs/phase2-live-results.md), [Phase 3+4](docs/phase34-live-results.md)
+- Live results: [Phase 1](docs/phase1-live-results.md), [Phase 2](docs/phase2-live-results.md), [Phase 3+4](docs/phase34-live-results.md), [Phase 5](docs/phase5-live-results.md)
 
 ## Disclosures
 
