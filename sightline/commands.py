@@ -19,7 +19,7 @@ from datetime import datetime
 from . import audit, grants
 from .amounts import AmountError, to_decimal
 from .config import DEFAULT_RPC_URL, network_from_url, read_env
-from .tokens import AddressError, KNOWN_MINTS, parse_address, short
+from .tokens import KNOWN_MINTS, AddressError, parse_address, short
 
 USAGE = """Usage:
   /sightline grant <amount_per_day> <token> to <addr>[,<addr>]|any [for 1h|24h|7d] [max <per_tx>] [note "..."]

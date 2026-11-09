@@ -1,10 +1,10 @@
 import pytest
+from fakes import FakeClient
 from solana.rpc.core import RPCException, TransactionExpiredBlockheightExceededError
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from spl.token.constants import ASSOCIATED_TOKEN_PROGRAM_ID
 
-from fakes import FakeClient
 from sightline.config import load_settings
 from sightline.wallet import Wallet, WalletError
 

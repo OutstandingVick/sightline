@@ -3,9 +3,8 @@
 import importlib
 import json
 
-from solders.keypair import Keypair
-
 from fakes import FakeClient
+from solders.keypair import Keypair
 
 MODEL_TOOLS = {"sightline_status", "sightline_balance", "sightline_preview", "sightline_pay"}
 

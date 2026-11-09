@@ -3,10 +3,10 @@
 from decimal import Decimal
 
 import pytest
+from fakes import FakeClient
 
 import sightline.state  # noqa: F401  (import before fixtures run, like the other test modules)
 import sightline.wallet  # noqa: F401
-from fakes import FakeClient
 
 
 @pytest.fixture

@@ -1,10 +1,10 @@
 
 import pytest
+from fakes import ATA_RENT, FEE, FakeClient
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 from spl.token.instructions import get_associated_token_address
 
-from fakes import ATA_RENT, FEE, FakeClient
 from sightline.config import load_settings
 from sightline.intents import execute_intent, pay_intent, preview_intent
 from sightline.simulate import simulate

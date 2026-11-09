@@ -6,7 +6,6 @@ import types
 import pytest
 
 import sightline.audit  # noqa: F401
-import sightline.events
 from sightline import audit, events
 from sightline.db import transaction
 

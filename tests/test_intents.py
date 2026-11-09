@@ -1,8 +1,8 @@
 import pytest
+from fakes import FakeClient
 from solders.keypair import Keypair
 from solders.pubkey import Pubkey
 
-from fakes import FakeClient
 from sightline.config import load_settings
 from sightline.intents import Intent, execute_intent, pay_intent
 from sightline.wallet import Wallet, WalletError

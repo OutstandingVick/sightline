@@ -5,10 +5,10 @@ import json
 import pathlib
 
 import pytest
+from fakes import FakeClient
 
 import sightline.state
 import sightline.wallet
-from fakes import FakeClient
 
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402

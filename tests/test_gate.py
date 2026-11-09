@@ -6,9 +6,8 @@ import threading
 from decimal import Decimal
 
 import pytest
-from solders.keypair import Keypair
-
 from fakes import FakeClient
+from solders.keypair import Keypair
 
 DEST = str(Keypair().pubkey())
 OTHER = str(Keypair().pubkey())

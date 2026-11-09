@@ -2,9 +2,8 @@ import importlib
 import json
 
 import pytest
-from solders.keypair import Keypair
-
 from fakes import FakeClient
+from solders.keypair import Keypair
 
 DEST = str(Keypair().pubkey())
 
