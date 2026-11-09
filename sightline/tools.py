@@ -30,25 +30,37 @@ BALANCE_SCHEMA = {
     "parameters": {"type": "object", "properties": {}, "required": []},
 }
 
+_PAY_PARAMS = {
+    "type": "object",
+    "properties": {
+        "recipient": {"type": "string", "description": "Recipient wallet address (base58 public key)."},
+        "amount": {"type": "number", "exclusiveMinimum": 0,
+                   "description": "Amount in whole units of the token, e.g. 0.01 for 0.01 SOL, 1 for 1 USDC."},
+        "token": {"type": "string", "default": "SOL",
+                  "description": "'SOL' (default), a known symbol such as 'USDC', or an SPL mint address."},
+    },
+    "required": ["recipient", "amount"],
+}
+
+PREVIEW_SCHEMA = {
+    "name": "sightline_preview",
+    "description": (
+        "Dry-run a payment from the user's Sightline wallet: builds and simulates it and explains in "
+        "plain English what would happen (amount, fee, accounts created, programs), WITHOUT signing or "
+        "sending. Use for 'preview sending…', 'what would happen if I send…'. " + _NET_NOTE
+    ),
+    "parameters": _PAY_PARAMS,
+}
+
 PAY_SCHEMA = {
     "name": "sightline_pay",
     "description": (
         "Send SOL or an SPL token from the user's Sightline wallet to a Solana address. "
         "Only call when the user clearly asked to send/pay a specific amount to a specific address. "
-        "Creates the recipient's token account if needed. Returns a summary, the transaction "
+        "Simulates first and sends nothing if simulation fails. Creates the recipient's token account if needed. Returns a plain-English summary, the transaction "
         "signature and an explorer link. " + _NET_NOTE
     ),
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "recipient": {"type": "string", "description": "Recipient wallet address (base58 public key)."},
-            "amount": {"type": "number", "exclusiveMinimum": 0,
-                       "description": "Amount in whole units of the token, e.g. 0.01 for 0.01 SOL, 1 for 1 USDC."},
-            "token": {"type": "string", "default": "SOL",
-                      "description": "'SOL' (default), a known symbol such as 'USDC', or an SPL mint address."},
-        },
-        "required": ["recipient", "amount"],
-    },
+    "parameters": _PAY_PARAMS,
 }
 
 def _wallet():
@@ -97,8 +109,18 @@ def sightline_pay(args: dict) -> dict:
     intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
     return execute_intent(w, intent).to_dict()
 
+@_guard
+def sightline_preview(args: dict) -> dict:
+    from .intents import pay_intent, preview_intent
+
+    w = _wallet()
+    intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
+    return preview_intent(w, intent).to_dict()
+
+
 TOOLS = [
     (STATUS_SCHEMA, sightline_status),
     (BALANCE_SCHEMA, sightline_balance),
+    (PREVIEW_SCHEMA, sightline_preview),
     (PAY_SCHEMA, sightline_pay),
 ]
