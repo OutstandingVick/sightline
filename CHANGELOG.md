@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 — Phases 3+4: grants, firewall, audit log
+- Human-only `/sightline` command: grant, grants, revoke (incl. picker / all), log, verify.
+- Grants: per token and network, named recipients (or explicit `any`), per-tx max, rolling 24h
+  cap computed from the audit log, expiry and revocation checked at decision time.
+- Firewall: hard blocks (simulation, mismatch, unknown programs, authority/approve/close/assign,
+  SOL reserve, >90% of a token balance, mainnet), grant ALLOW, otherwise human APPROVE.
+- `pre_tool_call` hook on `sightline_pay` only; unique approval keys so "always" can't
+  become a blanket approval; second gate + atomic spend reservation in `execute_intent`.
+- Append-only hash-chained audit log; unanswered approvals shown as blocked.
+- `sightline_status` lists grants read-only.
+
 ## 0.3.0 — Phase 2: simulation + plain-English preview
 - `simulate.py`: raw `simulateTransaction` (sigVerify off, blockhash replaced) → `SimulationReport`
   with fee, our SOL/token deltas, programs, writable/created accounts, rent, slot.
