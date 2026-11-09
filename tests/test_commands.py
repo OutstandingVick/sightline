@@ -92,3 +92,17 @@ def test_verify_reports_tampering(db_path):
     conn.commit()
     assert handle("verify").startswith("✗ chain broken")
     assert audit.verify()[0] is False
+
+
+def test_log_marks_unanswered_approvals_as_blocked():
+    from sightline.commands import _unanswered_approvals
+
+    intent = {"kind": "transfer_sol", "recipient": A, "amount": "1", "symbol": "SOL"}
+    asked = audit.append("decision", {"verdict": "APPROVE", "source": "hook", "intent": intent}, ts=1000)
+    yes = audit.append("decision", {"verdict": "APPROVE", "source": "hook", "intent": {**intent, "amount": "2"}},
+                       ts=1001)
+    audit.append("execute", {"approval": "human", "intent": {**intent, "amount": "2"}}, ts=1010)
+    rows = audit.entries()
+    assert _unanswered_approvals(rows, now=5000) == {asked}
+    assert _unanswered_approvals(rows, now=1100) == set()  # still inside the approval window
+    assert yes not in _unanswered_approvals(rows, now=5000)

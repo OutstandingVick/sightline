@@ -200,7 +200,43 @@ def cmd_log(argv: list[str]) -> str:
     rows = audit.entries(limit=n)
     if not rows:
         return "Audit log is empty."
-    return "\n".join(f"#{e['seq']} {_when(e['ts'])} {_summarise(e)}" for e in rows)
+    unanswered = _unanswered_approvals(audit.entries(limit=n + 500))
+    lines = []
+    for e in rows:
+        line = f"#{e['seq']} {_when(e['ts'])} {_summarise(e)}"
+        if e["seq"] in unanswered:
+            line += "  → not approved; treated as BLOCK, nothing sent"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+APPROVAL_WINDOW_S = 15 * 60
+
+
+def _unanswered_approvals(rows: list[dict], now: float | None = None) -> set[int]:
+    """Hook APPROVE decisions with no human-approved execute of the same intent afterwards.
+
+    Hermes runs the tool only after a human says yes (and fails closed when nobody can
+    answer), so an approval request that was never followed by an execute was refused.
+    Requests younger than the approval window are still pending and are left alone.
+    """
+    now = time.time() if now is None else now
+    out = set()
+    for i, e in enumerate(rows):
+        d = e["data"]
+        if e["event"] != "decision" or d.get("verdict") != "APPROVE" or d.get("source") != "hook":
+            continue
+        if now - e["ts"] < APPROVAL_WINDOW_S:
+            continue
+        answered = any(
+            later["event"] == "execute" and later["data"].get("approval") == "human"
+            and later["data"].get("intent") == d.get("intent")
+            and later["ts"] - e["ts"] <= APPROVAL_WINDOW_S
+            for later in rows[i + 1:]
+        )
+        if not answered:
+            out.add(e["seq"])
+    return out
 
 
 def cmd_verify() -> str:
