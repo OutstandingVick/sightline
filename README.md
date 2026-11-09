@@ -84,6 +84,14 @@ hermes plugins doctor . --ci
 hermes plugins validate . --install-deps
 ```
 
+## Docs
+
+- [Simulation report schema + samples](docs/simulation-report.md)
+- [Simulation approach and RPC quirks](docs/phase2-notes.md)
+- [Devnet test tokens](docs/devnet-tokens.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- Live results: [Phase 1](docs/phase1-live-results.md), [Phase 2](docs/phase2-live-results.md)
+
 ## Disclosures
 
 - Makes network calls to the configured Solana RPC (devnet by default).
