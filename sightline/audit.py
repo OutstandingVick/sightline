@@ -19,7 +19,7 @@ import json
 import time
 from decimal import Decimal
 
-from .db import connect
+from .db import connect, transaction
 
 GENESIS = "0" * 64
 DAY = 24 * 3600
@@ -34,21 +34,20 @@ def _hash(prev: str, seq: int, ts: float, event: str, data: dict) -> str:
 
 
 def append(event: str, data: dict, conn=None, ts: float | None = None) -> int:
-    """Append one event. Call inside ``db.transaction`` when it must be atomic with a check."""
-    own = conn is None
-    conn = conn or connect()
-    try:
-        row = conn.execute("SELECT seq, hash FROM audit ORDER BY seq DESC LIMIT 1").fetchone()
-        seq, prev = (row[0] + 1, row[1]) if row else (1, GENESIS)
-        ts = time.time() if ts is None else ts
-        conn.execute(
-            "INSERT INTO audit (seq, ts, event, data, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?)",
-            (seq, ts, event, _canonical(data), prev, _hash(prev, seq, ts, event, data)),
-        )
-        return seq
-    finally:
-        if own:
-            conn.close()
+    """Append one event. Pass ``conn`` from an open ``db.transaction`` when it must be atomic with
+    a check; otherwise the append runs in its own immediate transaction (seq + hash are read and
+    written under the same write lock, so concurrent appends can't collide)."""
+    if conn is None:
+        with transaction() as own_conn:
+            return append(event, data, conn=own_conn, ts=ts)
+    row = conn.execute("SELECT seq, hash FROM audit ORDER BY seq DESC LIMIT 1").fetchone()
+    seq, prev = (row[0] + 1, row[1]) if row else (1, GENESIS)
+    ts = time.time() if ts is None else ts
+    conn.execute(
+        "INSERT INTO audit (seq, ts, event, data, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?)",
+        (seq, ts, event, _canonical(data), prev, _hash(prev, seq, ts, event, data)),
+    )
+    return seq
 
 
 def entries(limit: int | None = None, conn=None) -> list[dict]:
