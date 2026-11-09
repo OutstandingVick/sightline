@@ -7,9 +7,10 @@ call passes a `pre_tool_call` hook that checks a user-issued, time-boxed, revoca
 grant, simulates the transaction, explains it in plain English, and blocks or
 approves it. The private key never reaches the model. Devnet by default.
 
-**Status: WIP (Phase 1 — wallet core).** Balances and SOL/SPL payments work on
-devnet. Grants, simulation and the firewall come in later phases; the
-`pre_tool_call` hook is still a logging placeholder.
+**Status: WIP (Phase 2 — simulation).** Balances and SOL/SPL payments work on
+devnet, and every payment is simulated and explained in plain English before it
+is signed; if simulation fails, nothing is sent. Grants and the firewall come in
+later phases; the `pre_tool_call` hook is still a logging placeholder.
 
 ## Tools
 
@@ -17,10 +18,22 @@ devnet. Grants, simulation and the firewall come in later phases; the
 |---|---|
 | `sightline_status` | Network, RPC URL, wallet public key |
 | `sightline_balance` | SOL + all SPL token balances (symbol when known) |
+| `sightline_preview(recipient, amount, token="SOL")` | Dry run: simulate + explain, never signs |
 | `sightline_pay(recipient, amount, token="SOL")` | Send SOL, a known symbol (`USDC`) or any mint; creates the recipient's token account if missing; returns signature + explorer link |
 
 No tool accepts raw transactions or instructions, and the secret key is never
-returned. Every payment goes through one choke point, `intents.execute_intent`.
+returned. Every payment goes through one choke point, `intents.execute_intent`:
+build → simulate → explain → sign and send.
+
+Example preview:
+
+```
+You send 1 USDC to 4FRE…wgaa.
+Creates their USDC account (≈0.00148844 SOL rent). Network fee ≈ 0.000005 SOL. Programs: Associated Token, Token.
+```
+
+If the simulated balance changes don't match the request, a `⚠ Mismatch:` line is
+added. See [docs/simulation-report.md](docs/simulation-report.md).
 
 Mainnet is refused unless `SIGHTLINE_ALLOW_MAINNET=1`; a custom RPC is checked
 against the mainnet genesis hash.
