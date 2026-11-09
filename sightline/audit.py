@@ -19,6 +19,7 @@ import json
 import time
 from decimal import Decimal
 
+from . import events
 from .db import connect, transaction
 
 GENESIS = "0" * 64
@@ -47,6 +48,7 @@ def append(event: str, data: dict, conn=None, ts: float | None = None) -> int:
         "INSERT INTO audit (seq, ts, event, data, prev_hash, hash) VALUES (?, ?, ?, ?, ?, ?)",
         (seq, ts, event, _canonical(data), prev, _hash(prev, seq, ts, event, data)),
     )
+    events.mark_dirty()
     return seq
 
 
