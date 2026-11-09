@@ -62,4 +62,6 @@ broken entry.
   plugin approval requests in `-q` runs. Leave it unset if you rely on APPROVE.
 - **Hermes trusts the plugin process.** Sightline runs in-process (plugin host
   isolation), like every native plugin.
+- **Desktop access.** Anyone using the Desktop window can see the wallet address,
+  balances and history, and can revoke grants. They cannot create or widen one.
 - Devnet by default; mainnet must be opted into explicitly.
