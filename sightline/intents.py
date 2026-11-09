@@ -47,7 +47,7 @@ class Receipt:
     simulation: SimulationReport | None = None  # what was approved; Phase 4 firewall input
 
     def to_dict(self) -> dict:
-        return {"summary": self.summary, "signature": self.signature,
+        return {"summary": self.summary, "sent": True, "signature": self.signature,
                 "explorer_url": self.explorer_url, "intent": asdict(self.intent),
                 "simulation": self.simulation.to_dict() if self.simulation else None}
 
