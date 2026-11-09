@@ -28,6 +28,7 @@ def test_sol_transfer_diff(setup):
     w, _ = setup
     r = simulate(w, w.build_sol_transfer(str(DEST), "0.01"), recipient=str(DEST))
     assert r.ok and r.sol_delta_lamports == -(10_000_000 + FEE) and r.fee_lamports == FEE
+    assert r.slot == 4242
     assert r.token_deltas == [] and r.recipient_received == "0.01" and not r.creates_accounts
     assert r.programs == ["11111111111111111111111111111111"] and r.unknown_programs == []
     assert str(w.owner) in r.writable_accounts and str(DEST) in r.writable_accounts

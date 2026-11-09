@@ -144,4 +144,4 @@ class FakeCluster:
         }
         if self.override:
             value.update(self.override)
-        return {"result": {"value": value}}
+        return {"result": {"context": {"slot": 4242}, "value": value}}

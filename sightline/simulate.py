@@ -72,6 +72,7 @@ class SimulationReport:
     created_accounts: list[str] = field(default_factory=list)
     rent_lamports: int = 0  # lamports moved into newly created accounts
     recipient_received: str | None = None  # what the intent's recipient gains (UI units)
+    slot: int | None = None  # slot the simulation ran against
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -128,7 +129,10 @@ def _rpc_simulate(url: str, tx_bytes: bytes, addresses: list[str]) -> dict:
     out = _post(url, body)
     if "error" in out:
         raise RuntimeError(f"RPC error {out['error'].get('code')}: {out['error'].get('message')}")
-    return out["result"]["value"]
+    result = out["result"]
+    value = dict(result["value"])
+    value["_slot"] = (result.get("context") or {}).get("slot")
+    return value
 
 
 def _fee_for_message(wallet, msg: MessageV0) -> int | None:
@@ -163,6 +167,7 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
 
     report.logs = [line[:MAX_LOG_CHARS] for line in (value.get("logs") or [])[-MAX_LOGS:]]
     report.compute_units = value.get("unitsConsumed")
+    report.slot = value.get("_slot")
     fee = _fee_for_message(wallet, msg)
     report.fee_lamports = fee if fee is not None else int(value.get("fee") or 0)
 
