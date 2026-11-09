@@ -77,3 +77,8 @@ def test_no_grant_needs_approval_with_reason():
     g = grant(token=USDC, cap="0.5")
     d = decide(USD, usd_report(), DEVNET)
     assert d.verdict == APPROVE and f"per-tx max of grant {g.id}" in d.reason
+
+
+def test_reserve_message_is_readable():
+    d = decide(SOL, sol_report(sol_post_lamports=1), DEVNET)
+    assert d.reason == "would leave less than the 0.01 SOL reserve"

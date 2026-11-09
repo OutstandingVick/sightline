@@ -68,7 +68,8 @@ def hard_blocks(intent, report: SimulationReport, settings) -> Decision | None:
     if problems:
         return _block("simulation does not match the request: " + "; ".join(problems), "mismatch")
     if report.sol_post_lamports < SOL_RESERVE_LAMPORTS:
-        return _block(f"would leave less than the {Decimal(SOL_RESERVE_LAMPORTS).scaleb(-9)} SOL reserve",
+        reserve = format(Decimal(SOL_RESERVE_LAMPORTS).scaleb(-9).normalize(), "f")
+        return _block(f"would leave less than the {reserve} SOL reserve",
                       "sol_reserve")
     for t in report.token_deltas:
         out, pre = -Decimal(t.delta_ui), Decimal(t.pre_ui)
