@@ -7,6 +7,8 @@ import sqlite3
 import threading
 from contextlib import contextmanager
 
+from . import events
+
 # One process-wide lock around "check cap + reserve spend". SQLite's BEGIN IMMEDIATE
 # additionally serialises writers across processes (e.g. CLI + gateway).
 SPEND_LOCK = threading.RLock()
@@ -56,9 +58,11 @@ def transaction(conn: sqlite3.Connection | None = None):
             yield conn
         except BaseException:
             conn.execute("ROLLBACK")
+            events.discard()
             raise
         else:
             conn.execute("COMMIT")
         finally:
             if own:
                 conn.close()
+    events.flush()  # after commit, outside the lock: the pane re-reads committed state
