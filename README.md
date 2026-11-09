@@ -73,6 +73,14 @@ added. See [docs/simulation-report.md](docs/simulation-report.md).
 Mainnet is refused unless `SIGHTLINE_ALLOW_MAINNET=1`; a custom RPC is checked
 against the mainnet genesis hash.
 
+## Desktop pane
+
+Hermes Desktop shows a **Sightline** pane: network, wallet and balances, active
+grants with usage and a countdown (with **Revoke**), and a live activity feed of
+every firewall decision. Turn it on in **Capabilities → Plugins**; open it with
+⌘K → *Sightline: Open firewall* or the status-bar item. The pane can revoke a
+grant but never create or widen one. See [docs/desktop-pane.md](docs/desktop-pane.md).
+
 ## Install (local)
 
 ```bash
@@ -112,8 +120,9 @@ For an SPL token, see [docs/devnet-tokens.md](docs/devnet-tokens.md)
 ## Development
 
 ```bash
-pip install "solana>=0.36,<0.37" "solders>=0.26,<0.27" pytest pyyaml
+pip install "solana>=0.36,<0.37" "solders>=0.26,<0.27" pytest pyyaml fastapi httpx
 pytest                              # offline, RPC is faked
+node --test tests/js/*.test.mjs     # Desktop half against a stub SDK
 SIGHTLINE_LIVE_TESTS=1 pytest tests/test_live_devnet.py   # sends 0.001 devnet SOL
 hermes plugins doctor . --ci
 hermes plugins validate . --install-deps
@@ -125,6 +134,7 @@ hermes plugins validate . --install-deps
 - [Simulation approach and RPC quirks](docs/phase2-notes.md)
 - [Devnet test tokens](docs/devnet-tokens.md)
 - [Security model](docs/security-model.md)
+- [Desktop pane](docs/desktop-pane.md)
 - [Troubleshooting](docs/troubleshooting.md)
 - Live results: [Phase 1](docs/phase1-live-results.md), [Phase 2](docs/phase2-live-results.md), [Phase 3+4](docs/phase34-live-results.md)
 
@@ -132,6 +142,7 @@ hermes plugins validate . --install-deps
 
 - Makes network calls to the configured Solana RPC (devnet by default).
 - Reads `SIGHTLINE_SECRET_KEY` via Hermes' secret route; never returns it to the model.
+- The Desktop pane reads `/api/plugins/sightline/state` (public data only) and can revoke grants.
 - Stores grants and the audit log in Hermes' plugin data directory (`plugin_db("sightline")`).
 
 ## License
