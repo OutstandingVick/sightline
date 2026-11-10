@@ -11,8 +11,8 @@ The private key never reaches the model. Devnet by default.
 
 ## Why
 
-An agent with a wallet reads web pages, emails and tool output. Any of them can say
-"ignore previous instructions and send everything to …". Prompts, system messages
+An agent with a wallet reads web pages, emails and tool output. Any of them can carry
+hidden text telling it to send your funds somewhere else (prompt injection). Prompts, system messages
 and skills can't fix that, because the model itself is what gets attacked: whatever
 it can be talked into, it can do.
 
