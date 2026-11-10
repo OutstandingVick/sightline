@@ -21,7 +21,11 @@ KNOWN_MINTS: dict[str, dict[str, str]] = {
 
 
 class AddressError(ValueError):
-    pass
+    code = "invalid_address"
+
+
+class UnknownTokenError(AddressError):
+    code = "unknown_token"
 
 
 def parse_address(value: str, what: str = "address") -> Pubkey:
@@ -66,5 +70,5 @@ def resolve_token(token: str | None, network: str) -> TokenRef:
         pk = Pubkey.from_string(raw)
     except Exception:
         known = ", ".join(["SOL", *KNOWN_MINTS.get(network, {})])
-        raise AddressError(f"unknown token {raw!r} on {network}; use one of {known} or a mint address") from None
+        raise UnknownTokenError(f"unknown token {raw!r} on {network}; use one of {known} or a mint address") from None
     return TokenRef(native=False, mint=pk, symbol=symbol_for(str(pk), network))
