@@ -58,7 +58,7 @@ class Blocked(WalletError):
     """The firewall refused this payment; nothing was signed or sent."""
 
     def __init__(self, decision, preview: "Preview"):
-        super().__init__("blocked", f"Sightline blocked: {decision.reason}\n{preview.explanation}")
+        super().__init__("blocked", f"Sightline BLOCK: {decision.reason}\n{preview.explanation}")
         self.decision = decision
         self.preview = preview
 
