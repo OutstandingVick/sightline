@@ -200,7 +200,7 @@ class Wallet:
                 return str(sig)
             except TransactionExpiredBlockheightExceededError:
                 if attempt == 2:
-                    raise WalletError("blockhash_expired", "transaction expired twice; try again") from None
+                    raise WalletError("blockhash_expired", "the transaction expired twice before it landed") from None
                 logger.info("sightline: blockhash expired, rebuilding")
                 built = self._rebuild(built)
             except UnconfirmedTxError:
@@ -237,6 +237,8 @@ def _brief(exc: Exception) -> str:
 
 def _send_error(text: str) -> WalletError:
     low = text.lower()
+    if "blockhash not found" in low:
+        return WalletError("blockhash_expired", "the transaction expired before it landed (blockhash not found)")
     if "insufficient lamports" in low or "insufficient funds" in low or "custom program error: 0x1" in low:
         return WalletError("insufficient_funds", "insufficient funds for this transfer and its fees")
     if "accountnotfound" in low.replace(" ", "") or "attempt to debit an account" in low:
