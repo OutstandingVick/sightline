@@ -34,7 +34,8 @@ def test_preview_of_failing_tx(tools):
 def test_pay_overdraft_is_simulation_failure(tools):
     handlers, client = tools
     out = json.loads(handlers["sightline_pay"]({"recipient": DEST, "amount": 1e6}))
-    assert out["error"] == "insufficient_funds" and out["next_step"] and out["sent"] is False and client.sent == []
+    assert out["error"] == "blocked" and out["decision"]["rule"] == "sol_reserve"
+    assert out["next_step"] and out["sent"] is False and client.sent == []
 
 
 def test_pay_success_shape(tools, grant_any):

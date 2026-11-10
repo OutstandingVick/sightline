@@ -108,7 +108,9 @@ def _evaluate_hook(args: dict, session_id: str):
     if decision.verdict == BLOCK:
         from .messages import next_step, rule_step
 
-        step = next_step(preview.simulation.error_code) if decision.rule == "simulation" else rule_step(decision.rule)
+        sim = preview.simulation
+        failed = not sim.ok and decision.rule in ("simulation", "no_grant")
+        step = next_step(sim.error_code) if failed else rule_step(decision.rule)
         return {"action": "block",
                 "message": f"Sightline BLOCK: {decision.reason}\n{preview.explanation}" + (f"\nNext: {step}" if step else "")}
     if decision.verdict == APPROVE:

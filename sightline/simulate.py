@@ -78,6 +78,7 @@ class SimulationReport:
     sol_post_lamports: int | None = None  # our SOL balance after the tx
     instructions: list[str] = field(default_factory=list)  # decoded top-level kinds, e.g. "Token.TransferChecked"
     error_code: str | None = None  # stable code for `error` (see messages.NEXT_STEP)
+    sol_pre_lamports: int | None = None  # our SOL balance before the tx (also filled when simulation fails)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -230,6 +231,7 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
 
     report.sol_delta_lamports = post[0] - pre[0] if keys and keys[0] == owner else _delta(keys, pre, post, owner)
     report.sol_post_lamports = post[keys.index(owner)] if owner in keys else None
+    report.sol_pre_lamports = pre[keys.index(owner)] if owner in keys else None
 
     # Accounts that went from 0 lamports to funded *with data* were created by this tx.
     spaces = {addr: (acc or {}).get("space", 0) for addr, acc in zip(watched, value.get("accounts") or [])}

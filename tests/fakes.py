@@ -98,6 +98,10 @@ class FakeCluster:
         pre_lam = dict(lam)
         pre_tok = {k: dict(v) for k, v in tok.items()}
         err, logs = None, []
+        if lam[keys[0]] == 0:  # like the real RPC: an unfunded fee payer doesn't exist yet
+            return {"result": {"context": {"slot": 4242}, "value": {
+                "err": "AccountNotFound", "logs": [], "unitsConsumed": 0, "accounts": None,
+                "preBalances": None, "postBalances": None, "preTokenBalances": None, "postTokenBalances": None}}}
         lam[keys[0]] -= FEE
         for ix in msg.instructions:
             pid = keys[ix.program_id_index]

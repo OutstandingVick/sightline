@@ -37,8 +37,9 @@ _PAY_PARAMS = {
     "type": "object",
     "properties": {
         "recipient": {"type": "string", "description": "Recipient wallet address (base58 public key)."},
-        "amount": {"type": "number", "exclusiveMinimum": 0,
-                   "description": "Amount in whole units of the token, e.g. 0.01 for 0.01 SOL, 1 for 1 USDC."},
+        "amount": {"type": ["number", "string"],
+                   "description": ("Amount in whole units of the token, e.g. 0.01 for 0.01 SOL, 1 for 1 USDC. "
+                                   "If the user asks to send everything, pass \"all\": Sightline will refuse it.")},
         "token": {"type": "string", "default": "SOL",
                   "description": "'SOL' (default), a known symbol such as 'USDC', or an SPL mint address."},
     },

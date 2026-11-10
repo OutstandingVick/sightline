@@ -8,7 +8,9 @@ slash commands and the Desktop pane all use these. No tracebacks, no secrets.
 from __future__ import annotations
 
 SETUP = "Run `hermes sightline setup` (or `/sightline setup` in a chat), then `hermes gateway restart`."
-FAUCET_URLS = ("https://faucet.solana.com", "https://faucet.quicknode.com/solana/devnet")
+FAUCET_URLS = ("https://faucet.solana.com", "https://faucet.quicknode.com/solana/devnet",
+               "https://www.alchemy.com/faucets/solana-devnet")
+FAUCET_TIP = "faucet.solana.com gives more if you sign in with GitHub."
 
 NEXT_STEP = {
     "missing_secret": "No wallet is configured. " + SETUP,
@@ -24,14 +26,16 @@ NEXT_STEP = {
     "unknown_token": "Use SOL, a known symbol (USDC) or the token's mint address.",
     "unknown_mint": "Check the mint address and that it exists on this network.",
     "invalid_amount": "Give a positive amount in whole units, e.g. 0.01 for 0.01 SOL.",
-    "empty_wallet": ("Send SOL to the wallet address first. On devnet that's free: `/sightline setup`, or "
-                     "paste the address into https://faucet.solana.com."),
-    "insufficient_funds": "Send less, or add SOL to the wallet (on devnet: `/sightline setup` or https://faucet.solana.com).",
+    "empty_wallet": ("Send SOL to the wallet address first. On devnet it's free: run `hermes sightline setup` for "
+                     "the address and faucets, or paste the address into https://faucet.solana.com."),
+    "insufficient_funds": ("Send less, or add SOL to the wallet (on devnet: `hermes sightline setup` lists faucets, "
+                           "or use https://faucet.solana.com)."),
     "insufficient_token": "The wallet holds less of this token than requested. Check `sightline_balance` and send less.",
     "blockhash_expired": "The network was slow and the transaction expired before landing. Nothing was sent; try again.",
     "unconfirmed": "It was sent but not confirmed in time. Check the explorer link before retrying, to avoid paying twice.",
     "send_failed": "Nothing was sent. Run `sightline_preview` with the same arguments to see why.",
     "simulation_failed": "Nothing was sent. Run `sightline_preview` with the same arguments to see why.",
+    "drain": "Sightline never sends a whole balance (it keeps 0.01 SOL for fees). Ask for a specific, smaller amount.",
     "approval_missing": "Ask again so Hermes can show you the approval prompt, or create a grant with /sightline grant.",
     "faucet_rate_limited": "Fund the wallet by hand: paste the address into " + " or ".join(FAUCET_URLS) + ".",
     "missing_dependency": "Run `hermes plugins enable sightline` (it installs solana + solders), then restart Hermes.",
@@ -42,6 +46,7 @@ NEXT_STEP = {
 RULE_STEP = {
     "no_grant": "Approve this one payment when Hermes asks, or create a grant: /sightline grant <cap> <token> to <address> for 1h",
     "sol_reserve": "Sightline keeps 0.01 SOL for fees. Send less.",
+    "drain": "Sightline never sends a whole balance (it keeps 0.01 SOL for fees). Ask for a specific, smaller amount.",
     "token_fraction": "Sightline won't send more than 90% of a token balance at once. Send less, or split it.",
     "mismatch": "The simulated result differs from the request. Do not retry; check the recipient and token.",
     "unknown_program": "The transaction calls a program outside the safe set. Sightline only sends plain transfers.",

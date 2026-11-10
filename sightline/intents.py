@@ -25,6 +25,10 @@ class Intent:
     mint: str | None = None
     decimals: int | None = None
     symbol: str | None = None
+    drain: bool = False  # asked for the whole balance ("all"); always blocked, never built
+
+
+DRAIN_WORDS = frozenset({"all", "max", "everything"})
 
 
 @dataclass(frozen=True)
@@ -73,14 +77,19 @@ class Blocked(WalletError):
 class SimulationFailed(WalletError):
     """Simulation rejected the transaction; it was not signed or sent."""
 
-    def __init__(self, preview: Preview):
-        super().__init__(preview.simulation.error_code or "simulation_failed", preview.explanation)
+    def __init__(self, preview: Preview, decision=None):
+        message = preview.explanation
+        if decision is not None:  # lead with the policy verdict, then what simulation said
+            message = f"Sightline BLOCK: {decision.reason}\n{preview.explanation}"
+        super().__init__(preview.simulation.error_code or "simulation_failed", message)
         self.preview = preview
+        self.decision = decision
 
     def to_dict(self) -> dict:
         from .messages import next_step
 
-        return {"error": self.code, "message": self.message, "sent": False,
+        extra = {"decision": self.decision.to_dict()} if self.decision is not None else {}
+        return {"error": self.code, "message": self.message, "sent": False, **extra,
                 "next_step": next_step(self.code),
                 "logs": self.preview.simulation.logs[-5:],
                 "simulation": self.preview.simulation.to_dict()}
@@ -88,19 +97,21 @@ class SimulationFailed(WalletError):
 
 def pay_intent(wallet: Wallet, recipient: str, amount, token: str | None = "SOL") -> Intent:
     """Validate tool arguments and resolve the token into a concrete Intent."""
+    drain = isinstance(amount, str) and amount.strip().lower() in DRAIN_WORDS
     try:
         parse_address(recipient, "recipient")
-        value = to_decimal(amount)
+        value = None if drain else to_decimal(amount)
         ref = resolve_token(token, wallet.settings.network)
     except (AddressError, AmountError) as exc:
         code = getattr(exc, "code", None) or ("invalid_amount" if isinstance(exc, AmountError) else "invalid_address")
         raise WalletError(code, str(exc)) from None
+    text = "all" if drain else format_amount(value)
     if ref.native:
-        return Intent(kind="transfer_sol", recipient=recipient.strip(), amount=format_amount(value),
-                      decimals=9, symbol="SOL")
+        return Intent(kind="transfer_sol", recipient=recipient.strip(), amount=text,
+                      decimals=9, symbol="SOL", drain=drain)
     mint = wallet.get_mint(ref.mint)
-    return Intent(kind="transfer_spl", recipient=recipient.strip(), amount=format_amount(value),
-                  mint=str(ref.mint), decimals=mint.decimals, symbol=ref.symbol)
+    return Intent(kind="transfer_spl", recipient=recipient.strip(), amount=text,
+                  mint=str(ref.mint), decimals=mint.decimals, symbol=ref.symbol, drain=drain)
 
 
 def build(wallet: Wallet, intent: Intent):
@@ -111,10 +122,28 @@ def build(wallet: Wallet, intent: Intent):
     raise WalletError("unsupported_intent", f"unsupported intent {intent.kind!r}")
 
 
+def _sol_balance(wallet: Wallet) -> int | None:
+    try:
+        return wallet.client.get_balance(wallet.owner).value
+    except Exception:  # unknown balance: the firewall then relies on simulation (fail closed)
+        return None
+
+
 def _preview(wallet: Wallet, intent: Intent):
-    built = build(wallet, intent)
-    report = simulate(wallet, built, recipient=intent.recipient)
-    text = explain(intent, report)
+    """Build + simulate + explain. A drain request is never built or simulated: it is always blocked."""
+    from .tokens import short
+
+    if intent.drain:
+        report = SimulationReport(ok=False, error="not simulated: the request is for the entire balance",
+                                  error_code="drain", sol_pre_lamports=_sol_balance(wallet))
+        text = f"You asked to send ALL your {intent.symbol or 'tokens'} to {short(intent.recipient)}."
+        built = None
+    else:
+        built = build(wallet, intent)
+        report = simulate(wallet, built, recipient=intent.recipient)
+        if report.sol_pre_lamports is None:
+            report.sol_pre_lamports = _sol_balance(wallet)
+        text = explain(intent, report)
     if wallet.settings.network == "mainnet":
         text = "⚠ MAINNET — real funds. " + text
     return built, Preview(intent=intent, simulation=report, explanation=text)
@@ -150,7 +179,7 @@ def execute_intent(wallet: Wallet, intent: Intent, evaluation=None) -> Receipt:
 
     refusal = None
     with transaction() as conn:
-        decision = decide(intent, report, settings, conn=conn)
+        decision = decide(intent, report, settings, conn=conn)  # policy first, then simulation
         if decision.verdict == APPROVE and hook_verdict != APPROVE:
             decision = Decision(BLOCK, f"needs human approval ({decision.reason}) but none was given",
                                 None, "approval_missing")
@@ -167,8 +196,8 @@ def execute_intent(wallet: Wallet, intent: Intent, evaluation=None) -> Receipt:
                     "fee_lamports", "sol_delta_lamports", "token_deltas", "programs", "slot")},
             }, conn=conn)
     if refusal is not None:
-        if not report.ok:
-            raise SimulationFailed(preview)
+        if not report.ok and refusal.rule in ("simulation", "no_grant"):
+            raise SimulationFailed(preview, refusal)
         raise Blocked(refusal, preview)
 
     try:

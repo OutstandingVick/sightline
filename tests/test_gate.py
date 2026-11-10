@@ -93,8 +93,8 @@ def test_approval_bound_to_session_and_args(env):
 
 def test_hard_block_from_hook(env):
     env.grant(cap="100", to=("*",))
-    d, out = env.call({"recipient": DEST, "amount": 1000})
-    assert d["action"] == "block" and d["message"].startswith("Sightline BLOCK: simulation failed")
+    d, out = env.call({"recipient": DEST, "amount": 1000})  # far more than the wallet holds
+    assert d["action"] == "block" and d["message"].startswith("Sightline BLOCK: would leave less than the 0.01 SOL reserve")
     assert out is None and env.client.sent == []
 
 

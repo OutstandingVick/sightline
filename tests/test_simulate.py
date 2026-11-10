@@ -60,13 +60,14 @@ def test_simulation_error_sends_nothing(setup, monkeypatch):
     w, _ = setup
     sent = []
     monkeypatch.setattr(w, "sign_and_send", lambda built: sent.append(built) or "SIG")
-    from sightline.intents import SimulationFailed
+    from sightline.intents import Blocked
 
-    with pytest.raises(SimulationFailed) as e:
-        execute_intent(w, pay_intent(w, str(DEST), 1_000))  # far more than the 10 SOL balance
-    assert sent == [] and e.value.preview.simulation.error == "insufficient funds"
+    with pytest.raises(Blocked) as e:
+        execute_intent(w, pay_intent(w, str(DEST), 1_000))  # far more than the wallet holds
+    assert sent == [] and e.value.decision.rule == "sol_reserve"  # policy reason first
+    assert e.value.preview.simulation.error == "insufficient funds"  # simulation still ran and failed
     d = e.value.to_dict()
-    assert d["sent"] is False and d["logs"] and "Nothing was sent" in d["message"]
+    assert d["sent"] is False and "Nothing was sent" in d["message"]
 
 
 def test_rpc_exception_sends_nothing(setup, cluster, monkeypatch):
