@@ -85,3 +85,15 @@ def grant_any():
 
     return grants.create(network="devnet", token="SOL", symbol="SOL", daily_cap=Decimal(100),
                          max_per_tx=None, recipients=["*"], duration_s=3600)
+
+
+# Test files whose cases are attacks on the firewall: prompt-injected payments, forged or
+# widened permissions, key leakage, log tampering, bypassing the hook. `pytest -m attack`.
+ATTACK_FILES = {"test_firewall.py", "test_gate.py", "test_no_secret_leak.py", "test_model_cannot_grant.py",
+                "test_audit.py", "test_plugin_api.py"}
+
+
+def pytest_collection_modifyitems(items):
+    for item in items:
+        if item.path.name in ATTACK_FILES:
+            item.add_marker(pytest.mark.attack)
