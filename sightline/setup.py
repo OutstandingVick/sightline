@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 
 from .config import DEFAULT_RPC_URL, ConfigError, network_from_url, parse_secret, read_env
-from .messages import FAUCET_URLS
+from .messages import FAUCET_TIP, FAUCET_URLS
 
 LAMPORTS_PER_SOL = 1_000_000_000
 AIRDROP_LAMPORTS = LAMPORTS_PER_SOL  # 1 SOL
@@ -134,6 +134,9 @@ def run(airdrop: bool = True, client=None, sleep=time.sleep) -> list[str]:
             out.append(f"✗ The {network} faucet didn't pay out ({note}). Fund the wallet by hand:")
             out.append(f"  address: {keypair.pubkey()}")
             out.extend(f"  {url}" for url in FAUCET_URLS)
+            out.append(f"  ({FAUCET_TIP})")
+            out.append("  No funds yet? Previews, grants and firewall decisions still work; sends are blocked "
+                       "until the wallet is funded.")
 
     out.append("Next: `hermes gateway restart` so every Hermes process sees the wallet, then try:")
     out.append("  /sightline grant 0.05 SOL to <address> for 1h max 0.01")

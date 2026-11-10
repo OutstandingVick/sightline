@@ -76,10 +76,18 @@ hermes gateway restart
 service manager exists, e.g. a container, it runs the gateway in the foreground.)
 
 `hermes sightline setup` (or `/sightline setup` in a chat) creates a devnet wallet,
-saves the key to `~/.hermes/.env` without showing it, and asks the devnet faucet for
-SOL. The public faucet is often rate-limited or off; then setup prints your address
-and the web faucets — paste the address into https://faucet.solana.com and you're
-funded. Run `hermes sightline setup` again to see the balance.
+saves the key to `~/.hermes/.env` without showing it, prints the wallet address and
+asks the devnet RPC for an airdrop (usually refused these days).
+
+### Get devnet SOL
+
+Paste the address `hermes sightline setup` printed into **https://faucet.solana.com**
+(signing in with GitHub raises the limit). Backups:
+https://faucet.quicknode.com/solana/devnet · https://www.alchemy.com/faucets/solana-devnet.
+Run `hermes sightline setup` again to see the balance.
+
+No funds? You can still try previews, grants and the firewall decisions — sends will be
+blocked until the wallet is funded.
 
 Then, in a Hermes chat — grant a small allowance and ask the agent to pay:
 

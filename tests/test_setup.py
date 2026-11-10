@@ -107,3 +107,13 @@ def test_refused_faucet_stops_retrying_and_says_why(home):
     lines = setup.run(client=faucet, sleep=lambda s: None)
     assert faucet.requests == 1
     assert any("HTTP 410" in line for line in lines) and any("faucet.solana.com" in line for line in lines)
+
+
+def test_setup_prints_the_readme_faucets(home):
+    from sightline.messages import FAUCET_URLS
+
+    text = "\n".join(setup.run(client=Faucet(fail_times=99), sleep=lambda s: None))
+    assert all(url in text for url in FAUCET_URLS) and "GitHub" in text
+    assert "sends are blocked until the wallet is funded" in text
+    readme = (__import__("pathlib").Path(__file__).resolve().parents[1] / "README.md").read_text()
+    assert all(url in readme for url in FAUCET_URLS)  # README and setup list the same faucets
