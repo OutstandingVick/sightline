@@ -36,3 +36,12 @@ def test_every_tool_description_states_devnet_default(plugin, ctx):
     plugin.register(ctx)
     for name, tool in ctx.tools.items():
         assert "devnet by default" in tool["schema"]["description"], name
+
+
+def test_manifest_declares_hermes_floor():
+    import pathlib
+
+    import yaml
+
+    manifest = yaml.safe_load((pathlib.Path(__file__).resolve().parents[1] / "plugin.yaml").read_text())
+    assert manifest["requires_hermes"] == ">=0.23.0"  # built and tested on Hermes v0.23.0

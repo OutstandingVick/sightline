@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.6.2
+- Declare `requires_hermes: ">=0.23.0"` (the version Sightline is built and tested on).
+
 ## 0.6.1 — pre-ship fixes
 - Firewall reports its policy verdict before simulation: mainnet opt-in, drain (`amount: "all"`, or an
   amount that would leave < 0.01 SOL), then the grant check. With an empty wallet a payment is still
