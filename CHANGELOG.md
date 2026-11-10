@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0 — Phase 6: hardening for first-time users
+- `/sightline setup` (and `scripts/setup_devnet.py`): creates or keeps a devnet wallet, stores the key
+  through Hermes, airdrops with retry/backoff, prints web faucets when rate-limited. Never shows the key.
+- Every error is `{error, message, next_step}`; hook BLOCK messages end with `Next: …`. New codes:
+  `empty_wallet`, `insufficient_token`, `unknown_token`, `rpc_timeout`; `SimulationReport.error_code`.
+- `SIGHTLINE_SECRET_KEY` also accepts a Solana CLI JSON byte array.
+- Mainnet: previews and blocks start with `⚠ MAINNET — real funds`; status/balance carry a warning.
+- Fixes: a token shortfall was reported as missing SOL; a repeated "Blockhash not found" was a generic
+  send failure; RPC error text could include the RPC URL's query string (API keys).
+- One vocabulary (ALLOW / APPROVE / BLOCK, grant, firewall) and one amount format everywhere.
+- README rewritten; `pytest -m attack` selects the adversarial tests.
+
 ## 0.5.0 — Phase 5: Desktop pane
 - `desktop/plugin.js`: Hermes Desktop pane with network badge, wallet + balances, active grants
   (usage bar, countdown, Revoke) and a live, newest-first activity feed with explorer links.
