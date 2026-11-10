@@ -25,7 +25,7 @@ def test_pay_intent_spl_by_mint(keypair):
 @pytest.mark.parametrize("to,amount,token,code", [
     ("bad", 1, "SOL", "invalid_address"),
     (DEST, -1, "SOL", "invalid_amount"),
-    (DEST, 1, "NOPE", "invalid_address"),
+    (DEST, 1, "NOPE", "unknown_token"),
 ])
 def test_pay_intent_rejects(keypair, to, amount, token, code):
     w = Wallet(load_settings(), client=FakeClient())
