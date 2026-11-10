@@ -65,7 +65,7 @@ def test_no_grant_asks_human_with_unique_rule_key(env):
     d1, out = env.call({"recipient": DEST, "amount": 0.5})
     d2, _ = env.call({"recipient": DEST, "amount": 0.5})
     assert d1["action"] == "approve" and out is None and env.client.sent == []
-    assert "No grant covers this: no grant for SOL on devnet. Approve once?" in d1["message"]
+    assert "No grant covers this: no grant for SOL on devnet. Approve this one payment?" in d1["message"]
     assert "You send 0.5 SOL" in d1["message"]
     assert d1["rule_key"] != d2["rule_key"] and d1["rule_key"].startswith("sightline:")
 
@@ -94,7 +94,7 @@ def test_approval_bound_to_session_and_args(env):
 def test_hard_block_from_hook(env):
     env.grant(cap="100", to=("*",))
     d, out = env.call({"recipient": DEST, "amount": 1000})
-    assert d["action"] == "block" and d["message"].startswith("Sightline blocked: simulation failed")
+    assert d["action"] == "block" and d["message"].startswith("Sightline BLOCK: simulation failed")
     assert out is None and env.client.sent == []
 
 

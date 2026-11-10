@@ -80,7 +80,8 @@ def pre_tool_call(tool_name: str = "", args: dict | None = None, session_id: str
         return _evaluate_hook(args or {}, session_id)
     except Exception as exc:  # anything unexpected: fail closed
         logger.exception("sightline: firewall hook failed")
-        return {"action": "block", "message": f"Sightline blocked: firewall error ({type(exc).__name__})."}
+        return {"action": "block", "message": f"Sightline BLOCK: firewall error ({type(exc).__name__}). Nothing was sent.\n"
+                                              "Next: run `hermes logs` for details."}
 
 
 def _evaluate_hook(args: dict, session_id: str):
@@ -96,17 +97,25 @@ def _evaluate_hook(args: dict, session_id: str):
         intent = pay_intent(wallet, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
         built, preview = _preview(wallet, intent)
     except Exception as exc:
+        from .messages import next_step
+
         message = getattr(exc, "message", None) or type(exc).__name__
-        return {"action": "block", "message": f"Sightline blocked: {message}"}
+        code = getattr(exc, "code", None) or "internal_error"
+        return {"action": "block", "message": f"Sightline BLOCK: {message}\nNext: {next_step(code)}"}
     decision = decide(intent, preview.simulation, wallet.settings)
     remember(cache_key(args, session_id), Evaluation(time.time(), intent, built, preview, decision))
     log_decision(asdict(intent), decision, preview.explanation, "hook")
     if decision.verdict == BLOCK:
-        return {"action": "block", "message": f"Sightline blocked: {decision.reason}\n{preview.explanation}"}
+        from .messages import next_step, rule_step
+
+        step = next_step(preview.simulation.error_code) if decision.rule == "simulation" else rule_step(decision.rule)
+        return {"action": "block",
+                "message": f"Sightline BLOCK: {decision.reason}\n{preview.explanation}" + (f"\nNext: {step}" if step else "")}
     if decision.verdict == APPROVE:
         return {
             "action": "approve",
-            "message": f"{preview.explanation}\nNo grant covers this: {decision.reason}. Approve once?",
+            "message": (f"Sightline APPROVE needed. {preview.explanation}\n"
+                        f"No grant covers this: {decision.reason}. Approve this one payment?"),
             # Unique per request: Hermes' "always"/"session" answers must never become a
             # blanket approval for future payments.
             "rule_key": f"sightline:{secrets.token_hex(8)}",
