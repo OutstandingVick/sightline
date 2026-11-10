@@ -280,15 +280,17 @@ def _fmt(d: Decimal) -> str:
 def _describe_err(err, logs: list[str]) -> tuple[str, str]:
     """(code, text) for a simulation error."""
     text = " ".join(logs).lower()
-    if "insufficient lamports" in text or "insufficient funds" in text:
+    if "insufficient lamports" in text:
         return "insufficient_funds", "insufficient funds"
     if err == "AccountNotFound":
         return "empty_wallet", "insufficient funds: the wallet has no SOL to pay fees"
     if isinstance(err, dict) and "InstructionError" in err:
         idx, detail = err["InstructionError"]
-        if detail == {"Custom": 1}:
+        if detail == {"Custom": 1}:  # the Token program's InsufficientFunds
             return "insufficient_token", f"insufficient token balance (instruction {idx})"
         return "simulation_failed", f"instruction {idx} failed: {detail}"
+    if "insufficient funds" in text:
+        return "insufficient_funds", "insufficient funds"
     if err == "BlockhashNotFound":
         return "blockhash_expired", "the blockhash expired before simulation"
     return "simulation_failed", f"simulation failed: {err}"

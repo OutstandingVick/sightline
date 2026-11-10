@@ -165,3 +165,10 @@ def test_report_has_firewall_balances(setup):
     r = simulate(w, w.build_spl_transfer(str(DEST), mint, 1), recipient=str(DEST))
     assert r.sol_post_lamports == 10**10 - FEE - ATA_RENT
     assert [(t.pre_ui, t.delta_ui) for t in r.token_deltas] == [("5", "-1")]
+
+
+def test_token_shortfall_is_insufficient_token():
+    from sightline.simulate import _describe_err
+
+    code, _ = _describe_err({"InstructionError": [1, {"Custom": 1}]}, ["Program log: Error: insufficient funds"])
+    assert code == "insufficient_token"
