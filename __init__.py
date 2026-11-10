@@ -48,3 +48,24 @@ def register(ctx) -> None:
         description="Sightline wallet firewall: setup, grant, grants, revoke, log, verify",
         args_hint="setup|grant|grants|revoke|log|verify",
     )
+
+    # `hermes sightline …` in a terminal: first-run setup without a model, plus read-only and
+    # narrowing commands. Deliberately NO `grant` here — the agent's own terminal tool can run
+    # shell commands, so a CLI grant would be a path for a prompt-injected agent to authorise itself.
+    register_cli = getattr(ctx, "register_cli_command", None)
+    if register_cli is not None:
+        def _cli_setup(parser):
+            parser.add_argument("subcommand", choices=CLI_SUBCOMMANDS, help="what to do")
+            parser.add_argument("rest", nargs="*", help="arguments, e.g. a grant id for revoke")
+
+        def _cli_run(args):
+            from .sightline.commands import handle
+
+            print(handle(" ".join([args.subcommand, *args.rest])))
+
+        register_cli("sightline", help="Sightline wallet firewall: setup, grants, revoke, log, verify",
+                     setup_fn=_cli_setup, handler_fn=_cli_run,
+                     description="Create grants with /sightline grant inside a Hermes chat; the CLI can't.")
+
+
+CLI_SUBCOMMANDS = ("setup", "grants", "revoke", "log", "verify")
