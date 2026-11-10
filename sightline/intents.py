@@ -74,7 +74,7 @@ class SimulationFailed(WalletError):
     """Simulation rejected the transaction; it was not signed or sent."""
 
     def __init__(self, preview: Preview):
-        super().__init__("simulation_failed", preview.explanation)
+        super().__init__(preview.simulation.error_code or "simulation_failed", preview.explanation)
         self.preview = preview
 
     def to_dict(self) -> dict:
@@ -93,7 +93,7 @@ def pay_intent(wallet: Wallet, recipient: str, amount, token: str | None = "SOL"
         value = to_decimal(amount)
         ref = resolve_token(token, wallet.settings.network)
     except (AddressError, AmountError) as exc:
-        code = "invalid_amount" if isinstance(exc, AmountError) else "invalid_address"
+        code = getattr(exc, "code", None) or ("invalid_amount" if isinstance(exc, AmountError) else "invalid_address")
         raise WalletError(code, str(exc)) from None
     if ref.native:
         return Intent(kind="transfer_sol", recipient=recipient.strip(), amount=format_amount(value),
