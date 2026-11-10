@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 
+from .messages import error_dict
+
 # Solana deps are imported lazily so the plugin registers even before they are installed.
 
 logger = logging.getLogger(__name__)
@@ -78,15 +80,14 @@ def _guard(fn):
         try:
             return json.dumps(fn(args or {}, session_id=str(kwargs.get("session_id") or "")))
         except ModuleNotFoundError as exc:
-            return json.dumps({"error": "missing_dependency",
-                               "message": f"{exc.name!r} not installed; enable the plugin and restart Hermes"})
+            return json.dumps(error_dict("missing_dependency", f"Python package {exc.name!r} is not installed."))
         except Exception as exc:
             if hasattr(exc, "to_dict"):  # WalletError, SimulationFailed (with report)
                 return json.dumps(exc.to_dict())
             if hasattr(exc, "code") and hasattr(exc, "message"):  # ConfigError
-                return json.dumps({"error": exc.code, "message": exc.message})
+                return json.dumps(error_dict(exc.code, exc.message))
             logger.warning("sightline: %s failed: %s", fn.__name__, type(exc).__name__)
-            return json.dumps({"error": "internal_error", "message": type(exc).__name__})
+            return json.dumps(error_dict("internal_error", f"Unexpected error ({type(exc).__name__})."))
 
     handler.__name__ = fn.__name__
     return handler
