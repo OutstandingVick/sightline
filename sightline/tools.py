@@ -97,7 +97,8 @@ def sightline_status(args: dict, session_id: str = "") -> dict:
     from .config import load_settings
 
     s = load_settings()
-    return {"network": s.network, "rpc_url": s.rpc_url, "public_key": str(s.public_key),
+    return {"network": s.network, **({"warning": "MAINNET: real funds."} if s.network == "mainnet" else {}),
+            "rpc_url": s.rpc_url, "public_key": str(s.public_key),
             "grants": _grant_summaries(s.network),
             "note": "Grants are read-only here; only the user can create or revoke them with /sightline."}
 
@@ -123,7 +124,10 @@ def _grant_summaries(network: str) -> list[dict]:
 @_guard
 def sightline_balance(args: dict, session_id: str = "") -> dict:
     w = _wallet()
-    return {"network": w.settings.network, "public_key": str(w.owner), **w.get_balances()}
+    out = {"network": w.settings.network, "public_key": str(w.owner), **w.get_balances()}
+    if w.settings.network == "mainnet":
+        out["warning"] = "MAINNET: these are real funds."
+    return out
 
 @_guard
 def sightline_pay(args: dict, session_id: str = "") -> dict:

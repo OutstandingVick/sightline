@@ -126,3 +126,19 @@ def test_block_has_next_step(run, grant_any):
 def test_no_grant_without_hook_says_what_to_do(run):
     out = run("sightline_pay", recipient=DEST, amount=0.01)
     assert out["error"] == "blocked" and out["next_step"]
+
+
+def test_mainnet_opt_in_says_mainnet_everywhere(run, monkeypatch):
+    monkeypatch.setenv("SIGHTLINE_RPC_URL", "https://api.mainnet-beta.solana.com")
+    monkeypatch.setenv("SIGHTLINE_ALLOW_MAINNET", "1")
+
+    class Mainnet(FakeClient):
+        def get_genesis_hash(self):
+            from types import SimpleNamespace as NS
+
+            return NS(value="5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d")
+
+    run.holder["client"] = Mainnet()
+    assert "MAINNET" in run("sightline_status")["warning"]
+    assert "MAINNET" in run("sightline_balance")["warning"]
+    assert run("sightline_preview", recipient=DEST, amount=0.01)["summary"].startswith("⚠ MAINNET")
