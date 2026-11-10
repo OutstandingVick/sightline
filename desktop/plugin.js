@@ -109,7 +109,10 @@ function Header({ state }) {
           jsx('span', { className: 'sl-key', title: state.pubkey, children: short(state.pubkey) }),
           jsx(CopyButton, { text: state.pubkey, label: 'Copy wallet address', appearance: 'icon', showLabel: false, buttonSize: 'icon-xs', buttonVariant: 'ghost' })
         ] })
-      : jsx('span', { className: 'sl-error', children: 'No wallet configured (set SIGHTLINE_SECRET_KEY)' }),
+      : jsxs('div', { className: 'sl-error', children: [
+          jsx('div', { children: state.wallet_error?.message || 'No wallet configured.' }),
+          jsx('div', { children: `Next: ${state.wallet_error?.next_step || 'type /sightline setup in Hermes.'}` })
+        ] }),
     b
       ? jsxs('div', { className: 'sl-balances', children: [
           jsxs('span', { className: 'sl-balance', children: [jsx('b', { children: b.sol }), ' SOL'] }),
@@ -117,7 +120,8 @@ function Header({ state }) {
             jsx('b', { children: t.amount }), ` ${t.symbol}`
           ] }, t.mint))
         ] })
-      : state.wallet_error && state.pubkey && jsx('span', { className: 'sl-error', children: `Balances unavailable: ${state.wallet_error.message}` })
+      : state.wallet_error && state.pubkey && jsx('span', { className: 'sl-error',
+          children: `Balances unavailable: ${state.wallet_error.message} ${state.wallet_error.next_step || ''}` })
   ] })
 }
 
