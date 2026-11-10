@@ -24,9 +24,9 @@ NEXT_STEP = {
     "unknown_token": "Use SOL, a known symbol (USDC) or the token's mint address.",
     "unknown_mint": "Check the mint address and that it exists on this network.",
     "invalid_amount": "Give a positive amount in whole units, e.g. 0.01 for 0.01 SOL.",
-    "empty_wallet": ("The wallet has no SOL to pay fees. Fund it: `/sightline setup` requests devnet SOL, or "
+    "empty_wallet": ("Send SOL to the wallet address first. On devnet that's free: `/sightline setup`, or "
                      "paste the address into https://faucet.solana.com."),
-    "insufficient_funds": "Send less, or fund the wallet (devnet: `/sightline setup` or https://faucet.solana.com).",
+    "insufficient_funds": "Send less, or add SOL to the wallet (on devnet: `/sightline setup` or https://faucet.solana.com).",
     "insufficient_token": "The wallet holds less of this token than requested. Check `sightline_balance` and send less.",
     "blockhash_expired": "The network was slow and the transaction expired before landing. Nothing was sent; try again.",
     "unconfirmed": "It was sent but not confirmed in time. Check the explorer link before retrying, to avoid paying twice.",
