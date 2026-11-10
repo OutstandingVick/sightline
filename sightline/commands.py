@@ -7,6 +7,7 @@ Slash commands are typed by the user; the model has no tool that reaches this co
   /sightline revoke <id> | /sightline revoke all
   /sightline log [n]
   /sightline verify
+  /sightline setup [--no-airdrop]
 """
 
 from __future__ import annotations
@@ -27,7 +28,8 @@ USAGE = """Usage:
   /sightline grants              list grants and what is left of each
   /sightline revoke <id>|all     revoke one or every grant
   /sightline log [n]             last n audit entries (default 10)
-  /sightline verify              check the audit log's hash chain"""
+  /sightline verify              check the audit log's hash chain
+  /sightline setup               create + fund a devnet wallet (keeps an existing one)"""
 
 _DURATION = re.compile(r"^(\d+)([mhd])$")
 _UNIT = {"m": 60, "h": 3600, "d": 86400}
@@ -239,6 +241,15 @@ def _unanswered_approvals(rows: list[dict], now: float | None = None) -> set[int
     return out
 
 
+def cmd_setup(argv: list[str]) -> str:
+    from . import setup
+
+    try:
+        return "\n".join(setup.run(airdrop="--no-airdrop" not in argv))
+    except ModuleNotFoundError as exc:
+        return f"Python package {exc.name!r} is missing. Run `hermes plugins enable sightline`, then restart Hermes."
+
+
 def cmd_verify() -> str:
     ok, msg = audit.verify()
     return ("✓ " if ok else "✗ ") + msg
@@ -263,6 +274,8 @@ def handle(raw_args: str, ask=None) -> str:
             return cmd_log(rest)
         if sub == "verify":
             return cmd_verify()
+        if sub == "setup":
+            return cmd_setup(rest)
     except UsageError as exc:
         return f"{exc}\n\n{USAGE}"
     return f"Unknown subcommand {argv[0]!r}.\n\n{USAGE}"

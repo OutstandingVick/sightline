@@ -45,6 +45,6 @@ def register(ctx) -> None:
     ctx.register_command(
         "sightline",
         handler=_command,
-        description="Sightline wallet firewall: grant, grants, revoke, log, verify",
-        args_hint="grant|grants|revoke|log|verify",
+        description="Sightline wallet firewall: setup, grant, grants, revoke, log, verify",
+        args_hint="setup|grant|grants|revoke|log|verify",
     )
