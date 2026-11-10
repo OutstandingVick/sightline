@@ -13,10 +13,23 @@ not.) `hermes plugins doctor . --ci` shows what a fresh process registers.
 **"missing_dependency".** Enable the plugin (`hermes plugins enable sightline`)
 so Hermes installs `solana`/`solders`, then restart Hermes.
 
-**"simulation_failed".** Nothing was sent. The message and `logs` say why
-(usually insufficient SOL or tokens). Use `sightline_preview` to dry-run.
+Every error Sightline returns has a `next_step`; it is usually the fastest fix. The
+common ones:
 
-**Airdrop rate-limited.** Use https://faucet.solana.com.
+| Code | What to do |
+|---|---|
+| `missing_secret` | Type `/sightline setup` in Hermes, then `hermes gateway restart`. |
+| `invalid_secret` | `SIGHTLINE_SECRET_KEY` must be base58 or a 64-number JSON array. Fix it, or delete it and run setup. |
+| `empty_wallet` / `insufficient_funds` | Add SOL: `/sightline setup` (devnet) or https://faucet.solana.com. |
+| `insufficient_token` | The wallet holds less of that token; check `sightline_balance`. |
+| `unknown_token` | Use `SOL`, `USDC` or the mint address. |
+| `rpc_timeout` / `rpc_error` | Retry in a minute, or set `SIGHTLINE_RPC_URL` to another RPC. |
+| `blockhash_expired` | Nothing was sent; the network was slow. Try again. |
+| `mainnet_refused` | Unset `SIGHTLINE_RPC_URL` for devnet, or opt in with `SIGHTLINE_ALLOW_MAINNET=1`. |
+
+**Faucet rate-limited during setup.** Setup prints the address; paste it into
+https://faucet.solana.com (or https://faucet.quicknode.com/solana/devnet), then
+run `/sightline setup` again to confirm the balance.
 
 **Every payment asks for approval.** No grant covers it. `/sightline grants` shows
 what is active and how much is left; the approval prompt says why no grant matched.
