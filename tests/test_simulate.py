@@ -80,7 +80,8 @@ def test_rpc_exception_sends_nothing(setup, cluster, monkeypatch):
 
     with pytest.raises(SimulationFailed) as e:
         execute_intent(w, pay_intent(w, str(DEST), "0.01"))
-    assert sent == [] and "simulation RPC failed" in e.value.preview.simulation.error
+    sim = e.value.preview.simulation
+    assert sent == [] and sim.error_code == "rpc_timeout" and "timed out" in sim.error
 
 
 def test_missing_balance_fields_fail_closed(setup, cluster):
@@ -117,11 +118,11 @@ def test_writable_accounts_follow_message_header(setup):
 
 
 @pytest.mark.parametrize("err,logs,expected", [
-    ("AccountNotFound", [], "insufficient funds: the wallet has no SOL to pay fees"),
-    ({"InstructionError": [1, {"Custom": 1}]}, [], "insufficient token balance (instruction 1)"),
-    ({"InstructionError": [0, "InvalidAccountData"]}, [], "instruction 0 failed: InvalidAccountData"),
-    ({"InstructionError": [0, {"Custom": 1}]}, ["Transfer: insufficient lamports 1, need 2"], "insufficient funds"),
-    ("BlockhashNotFound", [], "simulation failed: BlockhashNotFound"),
+    ("AccountNotFound", [], ("empty_wallet", "insufficient funds: the wallet has no SOL to pay fees")),
+    ({"InstructionError": [1, {"Custom": 1}]}, [], ("insufficient_token", "insufficient token balance (instruction 1)")),
+    ({"InstructionError": [0, "InvalidAccountData"]}, [], ("simulation_failed", "instruction 0 failed: InvalidAccountData")),
+    ({"InstructionError": [0, {"Custom": 1}]}, ["Transfer: insufficient lamports 1, need 2"], ("insufficient_funds", "insufficient funds")),
+    ("BlockhashNotFound", [], ("blockhash_expired", "the blockhash expired before simulation")),
 ])
 def test_error_descriptions(err, logs, expected):
     from sightline.simulate import _describe_err

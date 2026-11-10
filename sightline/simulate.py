@@ -21,6 +21,7 @@ How balance changes are computed (and why):
 from __future__ import annotations
 
 import base64
+import re
 from dataclasses import asdict, dataclass, field
 from decimal import Decimal
 
@@ -76,6 +77,7 @@ class SimulationReport:
     slot: int | None = None  # slot the simulation ran against
     sol_post_lamports: int | None = None  # our SOL balance after the tx
     instructions: list[str] = field(default_factory=list)  # decoded top-level kinds, e.g. "Token.TransferChecked"
+    error_code: str | None = None  # stable code for `error` (see messages.NEXT_STEP)
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -203,7 +205,10 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
     try:
         value = _rpc_simulate(wallet.settings.rpc_url, bytes(built.tx), watched)
     except Exception as exc:  # timeouts, HTTP errors, malformed responses
-        report.error = f"simulation RPC failed: {type(exc).__name__}: {str(exc)[:200]}"
+        timeout = "timeout" in type(exc).__name__.lower() or "timed out" in str(exc).lower()
+        report.error_code = "rpc_timeout" if timeout else "rpc_error"
+        detail = re.sub(r"\?\S*", "", str(exc))[:160]  # drop query strings (RPC URLs can carry API keys)
+        report.error = "the Solana RPC timed out" if timeout else f"the Solana RPC failed: {detail}"
         return report
 
     report.logs = [line[:MAX_LOG_CHARS] for line in (value.get("logs") or [])[-MAX_LOGS:]]
@@ -213,13 +218,14 @@ def simulate(wallet, built, recipient: str | None = None) -> SimulationReport:
     report.fee_lamports = fee if fee is not None else int(value.get("fee") or 0)
 
     if value.get("err") is not None:
-        report.error = _describe_err(value["err"], report.logs)
+        report.error_code, report.error = _describe_err(value["err"], report.logs)
         return report
 
     pre, post = value.get("preBalances"), value.get("postBalances")
     fields = ("preBalances", "postBalances", "preTokenBalances", "postTokenBalances")
     if any(value.get(f) is None for f in fields) or len(pre) != len(keys) or len(post) != len(keys):
         report.error = "RPC did not return balance changes; refusing to proceed"
+        report.error_code = "rpc_error"
         return report
 
     report.sol_delta_lamports = post[0] - pre[0] if keys and keys[0] == owner else _delta(keys, pre, post, owner)
@@ -271,15 +277,18 @@ def _fmt(d: Decimal) -> str:
     return format(d.normalize(), "f") if d != 0 else "0"
 
 
-def _describe_err(err, logs: list[str]) -> str:
+def _describe_err(err, logs: list[str]) -> tuple[str, str]:
+    """(code, text) for a simulation error."""
     text = " ".join(logs).lower()
     if "insufficient lamports" in text or "insufficient funds" in text:
-        return "insufficient funds"
+        return "insufficient_funds", "insufficient funds"
     if err == "AccountNotFound":
-        return "insufficient funds: the wallet has no SOL to pay fees"
+        return "empty_wallet", "insufficient funds: the wallet has no SOL to pay fees"
     if isinstance(err, dict) and "InstructionError" in err:
         idx, detail = err["InstructionError"]
         if detail == {"Custom": 1}:
-            return f"insufficient token balance (instruction {idx})"
-        return f"instruction {idx} failed: {detail}"
-    return f"simulation failed: {err}"
+            return "insufficient_token", f"insufficient token balance (instruction {idx})"
+        return "simulation_failed", f"instruction {idx} failed: {detail}"
+    if err == "BlockhashNotFound":
+        return "blockhash_expired", "the blockhash expired before simulation"
+    return "simulation_failed", f"simulation failed: {err}"
