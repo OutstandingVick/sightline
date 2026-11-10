@@ -55,3 +55,9 @@ def test_desktop_half_cannot_create_grants():
     assert "grants.create" not in api and "create(" not in api
     assert "/grant'" not in js and "'/grants'" not in js
     assert js.count("method: 'POST'") == 1  # the single POST is /revoke
+
+
+def test_cli_cannot_create_grants(plugin):
+    """The agent's terminal tool can run `hermes …`, so the CLI must not offer `grant`."""
+    assert "grant" not in plugin.CLI_SUBCOMMANDS
+    assert set(plugin.CLI_SUBCOMMANDS) <= {"setup", "grants", "revoke", "log", "verify"}
