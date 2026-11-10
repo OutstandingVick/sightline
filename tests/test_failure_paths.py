@@ -5,9 +5,9 @@ import json
 
 import pytest
 from fakes import FakeClient
+from solders.keypair import Keypair
 
 import sightline.grants  # noqa: F401  (import before fixtures, like the other test modules)
-from solders.keypair import Keypair
 
 DEST = str(Keypair().pubkey())
 

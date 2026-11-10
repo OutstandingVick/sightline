@@ -49,9 +49,18 @@ def store_secret(secret: str) -> str:
     return str(path)
 
 
-def _is_rate_limit(exc: Exception) -> bool:
-    text = f"{type(exc).__name__} {exc}".lower()
-    return any(s in text for s in ("429", "rate", "limit", "too many", "faucet has run dry", "airdrop request failed"))
+def _faucet_note(exc: Exception) -> str:
+    """Why the faucet said no, from the exception or the HTTP error it wraps."""
+    cause = exc.__cause__ or exc.__context__
+    text = f"{exc} {cause or ''}".lower()
+    status = getattr(getattr(cause, "response", None), "status_code", None)
+    if status == 429 or any(s in text for s in ("429", "rate", "too many", "limit")):
+        return "rate limited"
+    if status:
+        return f"faucet refused the request (HTTP {status})"
+    if "dry" in text or "airdrop" in text:
+        return "faucet is out of funds"
+    return f"faucet error ({type(exc).__name__})"
 
 
 def request_airdrop(client, pubkey, lamports: int = AIRDROP_LAMPORTS, sleep=time.sleep) -> tuple[bool, str]:
@@ -63,7 +72,9 @@ def request_airdrop(client, pubkey, lamports: int = AIRDROP_LAMPORTS, sleep=time
         try:
             client.request_airdrop(pubkey, lamports)
         except Exception as exc:
-            last = "rate limited" if _is_rate_limit(exc) else f"{type(exc).__name__}"
+            last = _faucet_note(exc)
+            if "HTTP 4" in last and "429" not in last:
+                break  # refused outright (e.g. 410): retrying won't help
             continue
         for _ in range(20):
             try:

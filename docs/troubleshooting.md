@@ -18,7 +18,7 @@ common ones:
 
 | Code | What to do |
 |---|---|
-| `missing_secret` | Type `/sightline setup` in Hermes, then `hermes gateway restart`. |
+| `missing_secret` | Run `hermes sightline setup`, then `hermes gateway restart`. |
 | `invalid_secret` | `SIGHTLINE_SECRET_KEY` must be base58 or a 64-number JSON array. Fix it, or delete it and run setup. |
 | `empty_wallet` / `insufficient_funds` | Add SOL: `/sightline setup` (devnet) or https://faucet.solana.com. |
 | `insufficient_token` | The wallet holds less of that token; check `sightline_balance`. |

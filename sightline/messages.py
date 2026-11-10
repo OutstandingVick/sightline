@@ -7,7 +7,7 @@ slash commands and the Desktop pane all use these. No tracebacks, no secrets.
 
 from __future__ import annotations
 
-SETUP = "Run `/sightline setup` in Hermes (or `python scripts/setup_devnet.py`), then `hermes gateway restart`."
+SETUP = "Run `hermes sightline setup` (or `/sightline setup` in a chat), then `hermes gateway restart`."
 FAUCET_URLS = ("https://faucet.solana.com", "https://faucet.quicknode.com/solana/devnet")
 
 NEXT_STEP = {

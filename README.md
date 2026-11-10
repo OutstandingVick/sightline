@@ -68,23 +68,20 @@ You need [Hermes Agent](https://github.com/NousResearch/hermes-agent) with a mod
 
 ```bash
 hermes plugins install OutstandingVick/sightline --enable --yes-deps
-```
-
-Then, in a Hermes chat:
-
-```
-/sightline setup
-```
-
-That creates a devnet wallet, saves the key to `~/.hermes/.env` (never shown) and
-requests free devnet SOL. If the faucet is busy it prints the address and the web
-faucets to use. Then:
-
-```bash
+hermes sightline setup
 hermes gateway restart
 ```
 
-Try it — grant a small allowance, then ask the agent to pay:
+(`hermes gateway restart` only matters if a Hermes gateway is already running; where no
+service manager exists, e.g. a container, it runs the gateway in the foreground.)
+
+`hermes sightline setup` (or `/sightline setup` in a chat) creates a devnet wallet,
+saves the key to `~/.hermes/.env` without showing it, and asks the devnet faucet for
+SOL. The public faucet is often rate-limited or off; then setup prints your address
+and the web faucets — paste the address into https://faucet.solana.com and you're
+funded. Run `hermes sightline setup` again to see the balance.
+
+Then, in a Hermes chat — grant a small allowance and ask the agent to pay:
 
 ```
 /sightline grant 0.05 SOL to <any devnet address> for 1h max 0.01
@@ -109,6 +106,9 @@ or the JSON array from a Solana CLI keypair file) instead of running setup.
 
 `<token>` is `SOL`, a known symbol (`USDC`) or a mint address. Recipients must be named;
 `to any` is allowed but has to be typed out.
+
+The same commands except `grant` also work in a terminal: `hermes sightline setup|grants|revoke|log|verify`.
+`grant` is chat-only on purpose — the agent's own terminal tool could run a CLI command.
 
 ## Tools (what the model gets)
 
@@ -205,8 +205,8 @@ What this plugin touches:
 - **Keys:** reads `SIGHTLINE_SECRET_KEY` through Hermes' secret route and keeps it in
   memory to sign. `/sightline setup` writes a newly generated key to `~/.hermes/.env`.
   The key is never logged, shown, returned to the model or sent anywhere.
-- **Network:** talks only to the configured Solana RPC (devnet by default), plus the
-  devnet faucet when you run `/sightline setup`.
+- **Network:** talks only to the configured Solana RPC (devnet by default); setup asks
+  that RPC for a devnet airdrop.
 - **Signing:** signs only SOL/SPL transfers that passed simulation and the firewall,
   inside a grant or after you approved that one payment.
 - **Storage:** grants and the audit log in Hermes' plugin data directory

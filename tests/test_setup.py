@@ -89,3 +89,21 @@ def test_slash_command(home, monkeypatch):
 
     out = commands.handle("setup --no-airdrop")
     assert "Created a new devnet wallet" in out and "SIGHTLINE_SECRET_KEY" in out
+
+
+def test_refused_faucet_stops_retrying_and_says_why(home):
+    import httpx
+
+    class Gone(Faucet):
+        def request_airdrop(self, pubkey, lamports):
+            self.requests += 1
+            req = httpx.Request("POST", "https://api.devnet.solana.com")
+            try:
+                raise httpx.HTTPStatusError("410", request=req, response=httpx.Response(410, request=req))
+            except httpx.HTTPStatusError as cause:
+                raise RuntimeError("HTTPStatusError raised in RequestAirdrop") from cause
+
+    faucet = Gone()
+    lines = setup.run(client=faucet, sleep=lambda s: None)
+    assert faucet.requests == 1
+    assert any("HTTP 410" in line for line in lines) and any("faucet.solana.com" in line for line in lines)
