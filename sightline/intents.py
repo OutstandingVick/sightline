@@ -114,7 +114,10 @@ def build(wallet: Wallet, intent: Intent):
 def _preview(wallet: Wallet, intent: Intent):
     built = build(wallet, intent)
     report = simulate(wallet, built, recipient=intent.recipient)
-    return built, Preview(intent=intent, simulation=report, explanation=explain(intent, report))
+    text = explain(intent, report)
+    if wallet.settings.network == "mainnet":
+        text = "⚠ MAINNET — real funds. " + text
+    return built, Preview(intent=intent, simulation=report, explanation=text)
 
 
 def preview_intent(wallet: Wallet, intent: Intent) -> Preview:
