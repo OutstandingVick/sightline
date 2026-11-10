@@ -141,7 +141,14 @@ def sightline_preview(args: dict, session_id: str = "") -> dict:
 
     w = _wallet()
     intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
-    return preview_intent(w, intent).to_dict()
+    out = preview_intent(w, intent).to_dict()
+    sim = out.get("simulation") or {}
+    if not out.get("would_succeed"):
+        from .messages import next_step
+
+        code = sim.get("error_code") or "simulation_failed"
+        out.update(error=code, message=out.get("summary"), next_step=next_step(code))
+    return out
 
 
 TOOLS = [
