@@ -18,8 +18,10 @@ SHOW_ENDED_FOR_S = 24 * 3600
 
 
 def _error(exc: Exception) -> dict:
-    return {"code": getattr(exc, "code", type(exc).__name__),
-            "message": getattr(exc, "message", None) or "unavailable"}
+    from .messages import next_step
+
+    code = getattr(exc, "code", None) or "internal_error"
+    return {"code": code, "message": getattr(exc, "message", None) or "unavailable", "next_step": next_step(code)}
 
 
 def _wallet_part() -> dict:

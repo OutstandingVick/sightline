@@ -146,3 +146,11 @@ def test_revoke_expired_grant_is_refused(client, keypair, monkeypatch):
     g = grants.create(network="devnet", token="SOL", symbol="SOL", daily_cap=Decimal(1), max_per_tx=None,
                       recipients=["*"], duration_s=1, now=1.0)
     assert revoke(g.id)["error"] == "not_active"
+
+
+def test_no_wallet_tells_the_pane_what_to_do(monkeypatch):
+    from sightline.state import get_state
+
+    monkeypatch.delenv("SIGHTLINE_SECRET_KEY", raising=False)
+    err = get_state()["wallet_error"]
+    assert err["code"] == "missing_secret" and "/sightline setup" in err["next_step"]
