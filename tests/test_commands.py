@@ -52,7 +52,7 @@ def test_grants_revoke_log_verify_flow():
     gid = out.split()[1].rstrip(":")
     assert out.startswith(f"Granted {gid}: the agent may send up to 5 USDC per rolling 24h (max 2 per tx)")
     listing = handle("grants")
-    assert gid in listing and "5/5 USDC left today" in listing and '"lunch"' in listing
+    assert gid in listing and "5/5 USDC left (24h)" in listing and '"lunch"' in listing
     assert handle(f"revoke {gid}") == f"Revoked {gid}. It no longer authorises any payment."
     assert "revoked" in handle("grants")
     log = handle("log 5")
