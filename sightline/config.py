@@ -8,6 +8,7 @@ or returned.
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 from urllib.parse import quote
@@ -78,7 +79,7 @@ class Settings:
     def check_genesis(self, genesis_hash: str) -> None:
         """Refuse a custom RPC that turns out to be mainnet (unless allowed)."""
         if genesis_hash == MAINNET_GENESIS_HASH and not self.allow_mainnet:
-            raise ConfigError("mainnet_refused", "RPC points at mainnet; set SIGHTLINE_ALLOW_MAINNET=1 to allow it")
+            raise ConfigError("mainnet_refused", "The custom RPC turned out to be Solana MAINNET (real funds) and mainnet is not enabled.")
 
 
 def load_settings() -> Settings:
@@ -86,12 +87,23 @@ def load_settings() -> Settings:
     network = network_from_url(rpc_url)
     allow_mainnet = _truthy(read_env("SIGHTLINE_ALLOW_MAINNET"))
     if network == "mainnet" and not allow_mainnet:
-        raise ConfigError("mainnet_refused", "mainnet is disabled; set SIGHTLINE_ALLOW_MAINNET=1 to allow it")
+        raise ConfigError("mainnet_refused", "The RPC is Solana MAINNET (real funds) and mainnet is not enabled.")
     secret = read_env("SIGHTLINE_SECRET_KEY")
     if not secret:
-        raise ConfigError("missing_secret", "SIGHTLINE_SECRET_KEY is not set")
+        raise ConfigError("missing_secret", "SIGHTLINE_SECRET_KEY is not set, so Sightline has no wallet.")
+    return Settings(rpc_url=rpc_url, network=network, allow_mainnet=allow_mainnet, keypair=parse_secret(secret))
+
+
+def parse_secret(secret: str) -> Keypair:
+    """A base58 secret key, or the JSON byte array a Solana CLI keypair file holds."""
+    secret = secret.strip()
     try:
-        keypair = Keypair.from_base58_string(secret)
+        if secret.startswith("["):
+            raw = json.loads(secret)
+            if not (isinstance(raw, list) and len(raw) == 64 and all(isinstance(b, int) and 0 <= b < 256 for b in raw)):
+                raise ValueError
+            return Keypair.from_bytes(bytes(raw))
+        return Keypair.from_base58_string(secret)
     except Exception:
-        raise ConfigError("invalid_secret", "SIGHTLINE_SECRET_KEY is not a valid base58 keypair") from None
-    return Settings(rpc_url=rpc_url, network=network, allow_mainnet=allow_mainnet, keypair=keypair)
+        raise ConfigError("invalid_secret", "SIGHTLINE_SECRET_KEY is set but is not a valid Solana secret key "
+                          "(expected base58, or a 64-number JSON array).") from None
