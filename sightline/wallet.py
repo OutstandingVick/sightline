@@ -51,7 +51,9 @@ class WalletError(Exception):
         self.message = message
 
     def to_dict(self) -> dict:
-        return {"error": self.code, "message": self.message}
+        from .messages import error_dict
+
+        return error_dict(self.code, self.message)
 
 
 @dataclass

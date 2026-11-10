@@ -63,7 +63,10 @@ class Blocked(WalletError):
         self.preview = preview
 
     def to_dict(self) -> dict:
+        from .messages import rule_step
+
         return {"error": self.code, "message": self.message, "sent": False,
+                "next_step": rule_step(self.decision.rule) or "Nothing was sent.",
                 "decision": self.decision.to_dict(), "simulation": self.preview.simulation.to_dict()}
 
 
@@ -75,7 +78,10 @@ class SimulationFailed(WalletError):
         self.preview = preview
 
     def to_dict(self) -> dict:
+        from .messages import next_step
+
         return {"error": self.code, "message": self.message, "sent": False,
+                "next_step": next_step(self.code),
                 "logs": self.preview.simulation.logs[-5:],
                 "simulation": self.preview.simulation.to_dict()}
 
