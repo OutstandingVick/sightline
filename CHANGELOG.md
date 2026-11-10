@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.1 — pre-ship fixes
+- Firewall reports its policy verdict before simulation: mainnet opt-in, drain (`amount: "all"`, or an
+  amount that would leave < 0.01 SOL), then the grant check. With an empty wallet a payment is still
+  BLOCKed (fail closed), but the reason now reads e.g. "no grant covers this: … (Also: wallet has 0 SOL
+  — run `hermes sightline setup` for funding options.)" instead of only "insufficient funds".
+- `sightline_pay` / `sightline_preview` accept `amount: "all"`, which is always blocked as a drain.
+- `SimulationReport.sol_pre_lamports`.
+- README "Get devnet SOL" step; `hermes sightline setup` prints the same faucets (faucet.solana.com,
+  QuickNode, Alchemy) and says what still works without funds.
+
 ## 0.6.0 — Phase 6: hardening for first-time users
 - `/sightline setup` (and `scripts/setup_devnet.py`): creates or keeps a devnet wallet, stores the key
   through Hermes, airdrops with retry/backoff, prints web faucets when rate-limited. Never shows the key.
