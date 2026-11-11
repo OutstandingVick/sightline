@@ -64,3 +64,7 @@ keeps the previous code. Run `hermes gateway restart`.
 
 **A cron job's payment was refused.** Unattended runs can pay only inside a grant. Check
 `/sightline grants` (expired? used up its 24h cap?) and `/sightline log` for the reason.
+
+**"exceeds the 7d cap of grant …".** A weekly (or monthly) budget is used up for now. It frees
+up as older payments age out of the rolling window; `/sightline grants` shows what's left.
+Approve this one payment, or create a bigger grant.
