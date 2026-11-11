@@ -43,7 +43,13 @@ _PAY_PARAMS = {
         "token": {"type": "string", "default": "SOL",
                   "description": "'SOL' (default), a known symbol such as 'USDC', or an SPL mint address."},
     },
-    "required": ["recipient", "amount"],
+    "required": [],
+}
+_PAY_PARAMS["properties"]["link"] = {
+    "type": "string",
+    "description": ("A Solana Pay payment link ('solana:<address>?amount=…&spl-token=…&memo=…') the user "
+                    "wants paid, e.g. from an invoice or QR code. Pass it as-is instead of recipient/amount/token. "
+                    "Transaction-request links (solana:https://…) are refused."),
 }
 
 PREVIEW_SCHEMA = {
@@ -60,7 +66,8 @@ PAY_SCHEMA = {
     "name": "sightline_pay",
     "description": (
         "Send SOL or an SPL token from the user's Sightline wallet to a Solana address. "
-        "Only call when the user clearly asked to send/pay a specific amount to a specific address. "
+        "Only call when the user clearly asked to send/pay a specific amount to a specific address, "
+        "or to pay a Solana Pay link (pass it as `link`). "
         "Simulates first and sends nothing if simulation fails. Payments inside one of the user's grants go "
         "through; anything else needs the user's approval or is blocked by the Sightline firewall. Creates the recipient's token account if needed. Returns a plain-English summary, the transaction "
         "signature and an explorer link. " + _NET_NOTE
@@ -137,7 +144,8 @@ def sightline_pay(args: dict, session_id: str = "") -> dict:
 
     evaluation = take(cache_key(args, session_id))  # the firewall hook's verdict for this exact call
     w = _wallet()
-    intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
+    intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL",
+                        link=args.get("link"))
     return execute_intent(w, intent, evaluation=evaluation).to_dict()
 
 @_guard
@@ -145,7 +153,8 @@ def sightline_preview(args: dict, session_id: str = "") -> dict:
     from .intents import pay_intent, preview_intent
 
     w = _wallet()
-    intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
+    intent = pay_intent(w, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL",
+                        link=args.get("link"))
     out = preview_intent(w, intent).to_dict()
     sim = out.get("simulation") or {}
     if not out.get("would_succeed"):
