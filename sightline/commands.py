@@ -66,7 +66,7 @@ def _resolve_token(raw: str, network: str) -> tuple[str, str]:
 
 def parse_grant(argv: list[str]) -> dict:
     if len(argv) < 2:
-        raise UsageError("grant needs <amount_per_day> <token>")
+        raise UsageError("grant needs <cap> <token>, e.g. 5 USDC (add 'per week' or 'per month' for a longer budget)")
     try:
         cap = to_decimal(argv[0])
     except AmountError as exc:
