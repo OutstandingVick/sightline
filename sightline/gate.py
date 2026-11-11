@@ -44,7 +44,7 @@ class Evaluation:
 
 def cache_key(args: dict, session_id: str = "") -> str:
     canon = {"recipient": str(args.get("recipient", "")).strip(), "amount": str(args.get("amount")),
-             "token": str(args.get("token") or "SOL").strip().upper()}
+             "token": str(args.get("token") or "SOL").strip().upper(), "link": str(args.get("link") or "").strip()}
     return hashlib.sha256(f"{session_id}|{json.dumps(canon, sort_keys=True)}".encode()).hexdigest()
 
 
@@ -94,7 +94,8 @@ def _evaluate_hook(args: dict, session_id: str):
 
     try:
         wallet = Wallet(load_settings())
-        intent = pay_intent(wallet, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL")
+        intent = pay_intent(wallet, args.get("recipient", ""), args.get("amount"), args.get("token") or "SOL",
+                            link=args.get("link"))
         built, preview = _preview(wallet, intent)
     except Exception as exc:
         from .messages import next_step
