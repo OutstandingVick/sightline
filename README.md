@@ -276,8 +276,7 @@ SIGHTLINE_LIVE_TESTS=1 pytest tests/test_live_devnet.py   # sends 0.001 devnet S
   gateway) can create grants.
 - The Desktop pane refreshes every 5 s rather than instantly.
 
-Roadmap: swaps through an allow-listed DEX with slippage limits, per-recipient
-budgets, multisig-backed approvals.
+Roadmap: swaps through an allow-listed DEX with slippage limits, multisig-backed approvals.
 
 ## Disclosures
 
@@ -298,11 +297,11 @@ What this plugin touches:
 ## Docs
 
 [Security model](docs/security-model.md) · [Troubleshooting](docs/troubleshooting.md) ·
-[Solana Pay links](docs/solana-pay.md) · [Unattended payments](docs/unattended-payments.md) ·
+[Solana Pay links](docs/solana-pay.md) · [Budgets](docs/budgets.md) · [Unattended payments](docs/unattended-payments.md) ·
 [Desktop pane](docs/desktop-pane.md) · [Simulation report](docs/simulation-report.md) ·
 [Devnet tokens](docs/devnet-tokens.md) · [Changelog](CHANGELOG.md) · Live results:
 [1](docs/phase1-live-results.md), [2](docs/phase2-live-results.md),
-[3+4](docs/phase34-live-results.md), [5](docs/phase5-live-results.md)
+[3+4](docs/phase34-live-results.md), [5](docs/phase5-live-results.md), [0.6.4](docs/v0.6.4-live-results.md), [0.6.5](docs/v0.6.5-live-results.md)
 
 ## License
 
