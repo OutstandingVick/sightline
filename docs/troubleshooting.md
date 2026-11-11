@@ -25,6 +25,8 @@ common ones:
 | `unknown_token` | Use `SOL`, `USDC` or the mint address. |
 | `rpc_timeout` / `rpc_error` | Retry in a minute, or set `SIGHTLINE_RPC_URL` to another RPC. |
 | `blockhash_expired` | Nothing was sent; the network was slow. Try again. |
+| `invalid_payment_link` | Use a Solana Pay *transfer* link with an amount (`solana:<address>?amount=…`); transaction-request links (`solana:https://…`) are refused. Don't also pass a different recipient/amount/token. |
+| `blocked` with rule `self_payment` | The recipient is the wallet's own address; use the payee's address. |
 | `mainnet_refused` | Unset `SIGHTLINE_RPC_URL` for devnet, or opt in with `SIGHTLINE_ALLOW_MAINNET=1`. |
 
 **Faucet rate-limited during setup.** Setup prints the address; paste it into
@@ -59,3 +61,6 @@ from the plugin host don't reach Desktop. Revokes from the pane show at once.
 
 **Old messages after updating Sightline.** A long-running gateway or plugin host
 keeps the previous code. Run `hermes gateway restart`.
+
+**A cron job's payment was refused.** Unattended runs can pay only inside a grant. Check
+`/sightline grants` (expired? used up its 24h cap?) and `/sightline log` for the reason.
