@@ -58,8 +58,13 @@ broken entry.
   detects edits to past audit entries but not a forged grant row inserted
   together with a rebuilt chain. Keep shell tools on approval mode when Sightline
   holds real value.
-- **`approvals.single_query_mode: approve`** in Hermes' config auto-approves
-  plugin approval requests in `-q` runs. Leave it unset if you rely on APPROVE.
+- **`approvals.single_query_mode: approve`** (for `-q` runs) and **`approvals.cron_mode:
+  approve`** (for cron jobs) in Hermes' config auto-approve plugin approval requests when
+  nobody is present. Leave both unset: without them, an unattended run can pay only inside
+  a grant ([unattended payments](unattended-payments.md)).
+- **Solana Pay links** are parsed into the same intent as a typed payment; a link can't
+  widen a grant, an approval is bound to the exact link, and transaction-request links
+  (`solana:https://…`), which would hand Sightline a ready-made transaction, are refused.
 - **Hermes trusts the plugin process.** Sightline runs in-process (plugin host
   isolation), like every native plugin.
 - **Desktop access.** Anyone using the Desktop window can see the wallet address,
