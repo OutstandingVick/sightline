@@ -163,3 +163,14 @@ def test_pane_and_log_show_the_policy_reason(env):
     feed = state.get_state()["recent_audit"]
     assert feed[0]["verdict"] == "BLOCK" and feed[0]["reason"].startswith("no grant covers this")
     assert "no grant covers this" in commands.handle("log 2")
+
+
+def test_paying_yourself_is_named_as_such(plugin, ctx, keypair, monkeypatch, cluster):
+    plugin.register(ctx)
+    pkg = plugin.__name__ + ".sightline"
+    monkeypatch.setattr(importlib.import_module(pkg + ".wallet"), "Client", lambda *a, **k: FakeClient())
+    hook = ctx.hooks["pre_tool_call"][0]
+    d = hook(tool_name="sightline_pay", args={"recipient": str(keypair.pubkey()), "amount": 0.01},
+             session_id="s", task_id="t")
+    assert d["action"] == "block" and "this wallet's own address" in d["message"]
+    assert "That address is this wallet" in d["message"] or "address is this wallet" in d["message"]
