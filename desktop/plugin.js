@@ -153,7 +153,7 @@ function GrantCard({ grant, ctx, now }) {
         : jsx(Badge, { variant: 'muted', children: grant.status })
     ] }),
     active && jsxs('div', { className: 'sl-spread', children: [
-      jsxs('span', { children: [`${grant.used_24h} / ${grant.daily_cap} ${grant.symbol}`, jsx('span', { className: 'sl-muted', children: ' used (24h)' })] }),
+      jsxs('span', { children: [`${grant.used_24h} / ${grant.daily_cap} ${grant.symbol}`, jsx('span', { className: 'sl-muted', children: ` used (${grant.period || '24h'})` })] }),
       jsx('span', { className: 'sl-muted', children: `max ${grant.max_per_tx}/tx` })
     ] }),
     active && jsx('div', { className: 'sl-bar', 'data-full': pct >= 100, children: jsx('span', { style: { width: `${pct}%` } }) }),
@@ -216,7 +216,7 @@ function ActivityItem({ e, ctx }) {
   const label = {
     execute: ['SIGNING', 'muted', `${amountLine(e)} via ${e.approval}${e.grant_id ? ` ${e.grant_id}` : ''}`],
     failed: ['FAILED', 'destructive', `${e.error || ''} ${e.message || ''}`],
-    grant_created: ['GRANT', 'default', `${e.grant_id} created: ${e.daily_cap} ${e.symbol}/24h`],
+    grant_created: ['GRANT', 'default', `${e.grant_id} created: ${e.daily_cap} ${e.symbol}/${e.period || '24h'}`],
     grant_revoked: ['REVOKED', 'muted', `${e.grant_id} revoked`]
   }[e.event] || [e.event.toUpperCase(), 'muted', '']
   return jsx('div', { className: 'sl-item', children: jsxs('div', { className: 'sl-spread', children: [
