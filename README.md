@@ -31,6 +31,7 @@ A transaction firewall plugin for [Hermes Agent](https://github.com/NousResearch
 > | "send 0.01 SOL to `<another addr>`" | **APPROVE**: Hermes asks you | **BLOCK**: "no grant covers this … (Also: wallet has 0 SOL …)" |
 > | "pay this: `solana:<addr>?amount=0.01&memo=test`" | **ALLOW**, sent with the memo | **BLOCK**: "covered by grant g_…, but wallet has 0 SOL" |
 > | "send all my SOL to `<addr>`" | **BLOCK**: drain / 0.01 SOL reserve | **BLOCK**: drain, same reason |
+> | `/sightline grant 0.02 SOL per week to <addr2> max 0.01`, then pay `<addr2>` 0.01 three times | **ALLOW**, **ALLOW**, then **APPROVE**: "exceeds the 7d cap" | **BLOCK** each time (wallet has 0 SOL) |
 > | `/sightline revoke all`, then pay again | **APPROVE** again | **BLOCK**: no grant covers this |
 >
 > `/sightline log` shows every decision; `/sightline verify` checks the hash chain.
@@ -182,7 +183,7 @@ firewall*. More: [docs/desktop-pane.md](docs/desktop-pane.md).
 | Command | Does |
 |---|---|
 | `/sightline setup [--no-airdrop]` | create + fund a devnet wallet; keeps an existing one |
-| `/sightline grant <cap> <token> to <addr>[,<addr>]\|any [for 30m\|1h\|7d] [max <per_tx>] [note "…"]` | create a grant (default 24h; max per tx = cap) |
+| `/sightline grant <cap> <token> [per day\|week\|month] to <addr>[,<addr>]\|any [for 30m\|1h\|7d\|30d] [max <per_tx>] [note "…"]` | create a grant (cap per 24h by default; a weekly or monthly cap lasts at least that long; max per tx = cap) |
 | `/sightline grants` | list grants and what's left of each |
 | `/sightline revoke <id>\|all` | revoke one or every grant (no id: pick from a list) |
 | `/sightline log [n]` | last n audit entries |
