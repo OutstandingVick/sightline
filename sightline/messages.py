@@ -35,6 +35,8 @@ NEXT_STEP = {
     "unconfirmed": "It was sent but not confirmed in time. Check the explorer link before retrying, to avoid paying twice.",
     "send_failed": "Nothing was sent. Run `sightline_preview` with the same arguments to see why.",
     "simulation_failed": "Nothing was sent. Run `sightline_preview` with the same arguments to see why.",
+    "invalid_payment_link": ("Check the link: Sightline pays Solana Pay transfer requests "
+                             "(solana:<address>?amount=…), not transaction requests (solana:https://…)."),
     "drain": "Sightline never sends a whole balance (it keeps 0.01 SOL for fees). Ask for a specific, smaller amount.",
     "approval_missing": "Ask again so Hermes can show you the approval prompt, or create a grant with /sightline grant.",
     "faucet_rate_limited": "Fund the wallet by hand: paste the address into " + " or ".join(FAUCET_URLS) + ".",
