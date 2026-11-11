@@ -123,6 +123,26 @@ send all my SOL to <that address>        → BLOCK (keeps 0.01 SOL for fees)
 Already have a key? Put it in `~/.hermes/.env` as `SIGHTLINE_SECRET_KEY=` (base58,
 or the JSON array from a Solana CLI keypair file) instead of running setup.
 
+## Pay links and unattended payments
+
+**Solana Pay links.** Paste a payment request from a shop, invoice or QR code: *"pay this:
+solana:76nK…?amount=0.01&label=Demo%20Cafe&memo=invoice-1001"*. Sightline adds the memo and
+reference keys the merchant needs, shows "You send 0.01 SOL to Demo Cafe (76nK…TRX1). Memo:
+"invoice-1001"" in the preview, and checks it against your grants like any payment.
+Transaction-request links (`solana:https://…`), which would hand over a ready-made transaction,
+are refused. [More](docs/solana-pay.md).
+
+**Unattended payments.** A grant is a standing permission, so a cron job or a bot can pay
+inside it with nobody at the keyboard. Anything outside the grant needs approval, which an
+unattended run can't give, so it's refused:
+
+```bash
+hermes cron create "0 9 * * *" "Pay this link with sightline_pay (as link): solana:<addr>?amount=0.01&memo=daily"
+```
+
+Tested live: the job paying inside the grant was sent with its memo; the one paying a
+stranger was refused. [More](docs/unattended-payments.md).
+
 ## Slash commands (you only)
 
 | Command | Does |
@@ -146,8 +166,11 @@ The same commands except `grant` also work in a terminal: `hermes sightline setu
 |---|---|
 | `sightline_status` | network, wallet address, grants (read-only) |
 | `sightline_balance` | SOL and every SPL token balance |
-| `sightline_preview(recipient, amount, token="SOL")` | simulate + explain in plain English; never signs |
-| `sightline_pay(recipient, amount, token="SOL")` | send SOL or an SPL token through the firewall; creates the recipient's token account if needed |
+| `sightline_preview(recipient, amount, token="SOL" \| link)` | simulate + explain in plain English; never signs |
+| `sightline_pay(recipient, amount, token="SOL" \| link)` | send SOL or an SPL token through the firewall; creates the recipient's token account if needed |
+
+`link` is a [Solana Pay](docs/solana-pay.md) payment link (`solana:<address>?amount=…&memo=…`), in place of
+recipient/amount/token. `amount: "all"` is accepted only to be refused as a drain.
 
 Every error comes back as `{error, message, next_step}` — for example
 `missing_secret`, `rpc_timeout`, `unknown_token`, `insufficient_token`,
@@ -216,7 +239,8 @@ SIGHTLINE_LIVE_TESTS=1 pytest tests/test_live_devnet.py   # sends 0.001 devnet S
 
 ## Limitations and roadmap
 
-- Solana only; SOL and SPL token transfers only. No swaps, staking or arbitrary programs yet.
+- Solana only; SOL and SPL token transfers (typed or from Solana Pay transfer links). No swaps,
+  staking, transaction-request links or arbitrary programs yet.
 - Approval prompts need an interactive Hermes session; `hermes chat -q`, cron and
   unattended bots block anything that needs approval (by design).
 - An agent that also has unrestricted shell access could edit Sightline's database or
@@ -247,6 +271,7 @@ What this plugin touches:
 ## Docs
 
 [Security model](docs/security-model.md) · [Troubleshooting](docs/troubleshooting.md) ·
+[Solana Pay links](docs/solana-pay.md) · [Unattended payments](docs/unattended-payments.md) ·
 [Desktop pane](docs/desktop-pane.md) · [Simulation report](docs/simulation-report.md) ·
 [Devnet tokens](docs/devnet-tokens.md) · [Changelog](CHANGELOG.md) · Live results:
 [1](docs/phase1-live-results.md), [2](docs/phase2-live-results.md),
