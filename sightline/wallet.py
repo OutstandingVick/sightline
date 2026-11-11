@@ -19,7 +19,7 @@ from solana.rpc.commitment import Confirmed
 from solana.rpc.core import RPCException, TransactionExpiredBlockheightExceededError, UnconfirmedTxError
 from solana.rpc.types import TokenAccountOpts, TxOpts
 from solders.hash import Hash
-from solders.instruction import Instruction
+from solders.instruction import AccountMeta, Instruction
 from solders.message import MessageV0
 from solders.pubkey import Pubkey
 from solders.signature import Signature
@@ -40,6 +40,21 @@ from .tokens import AddressError, parse_address, short, symbol_for
 logger = logging.getLogger(__name__)
 
 MINT_DECIMALS_OFFSET = 44  # SPL Mint layout: authority option(36) + supply(8) → decimals
+
+
+MEMO_PROGRAM_ID = Pubkey.from_string("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr")
+
+
+def _with_references(ix: Instruction, references) -> Instruction:
+    """Solana Pay: reference keys ride on the transfer as read-only, non-signer accounts."""
+    if not references:
+        return ix
+    extra = [AccountMeta(_address(r, "reference"), is_signer=False, is_writable=False) for r in references]
+    return Instruction(ix.program_id, ix.data, list(ix.accounts) + extra)
+
+
+def _memo_ix(memo: str | None) -> list[Instruction]:
+    return [Instruction(MEMO_PROGRAM_ID, memo.encode(), [])] if memo else []
 
 
 class WalletError(Exception):
@@ -153,16 +168,17 @@ class Wallet:
         return BuiltTx(tx=tx, instructions=instructions, last_valid_block_height=last_valid,
                        summary=summary, watch=list(watch or []))
 
-    def build_sol_transfer(self, to: str, amount_sol) -> BuiltTx:
+    def build_sol_transfer(self, to: str, amount_sol, memo: str | None = None, references=()) -> BuiltTx:
         self._check_cluster()
         dest = _address(to, "recipient")
         lamports = _units(amount_sol, SOL_DECIMALS)
         # Balance is not pre-checked here: simulation is the single gate (Phase 2).
         ix = transfer(TransferParams(from_pubkey=self.owner, to_pubkey=dest, lamports=lamports))
-        return self._compile([ix], f"send {from_base_units(lamports, 9).normalize()} SOL to {dest}",
+        return self._compile([*_memo_ix(memo), _with_references(ix, references)], f"send {from_base_units(lamports, 9).normalize()} SOL to {dest}",
                              watch=[str(self.owner), str(dest)])
 
-    def build_spl_transfer(self, to: str, mint: str | Pubkey, amount) -> BuiltTx:
+    def build_spl_transfer(self, to: str, mint: str | Pubkey, amount, memo: str | None = None,
+                           references=()) -> BuiltTx:
         self._check_cluster()
         dest_owner = _address(to, "recipient")
         mint_pk = mint if isinstance(mint, Pubkey) else _address(mint, "mint")
@@ -172,11 +188,12 @@ class Wallet:
         source = get_associated_token_address(self.owner, mint_pk, m.program_id)
         dest = get_associated_token_address(dest_owner, mint_pk, m.program_id)
         ixs = [
+            *_memo_ix(memo),
             create_idempotent_associated_token_account(self.owner, dest_owner, mint_pk, m.program_id),
-            transfer_checked(TransferCheckedParams(
+            _with_references(transfer_checked(TransferCheckedParams(
                 program_id=m.program_id, source=source, mint=mint_pk, dest=dest,
                 owner=self.owner, amount=units, decimals=m.decimals,
-            )),
+            )), references),
         ]
         return self._compile(ixs, f"send {from_base_units(units, m.decimals).normalize()} {label} to {dest_owner}",
                              watch=[str(self.owner), str(source), str(dest_owner), str(dest)])
