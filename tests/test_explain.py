@@ -73,3 +73,18 @@ def test_unknown_program_flagged():
 def test_failed_report_explanation():
     assert explain(SOL_INTENT, SimulationReport(ok=False, error="insufficient funds")) == (
         "✗ Simulation failed: insufficient funds. Nothing was sent.")
+
+
+def test_link_label_and_memo_are_shown():
+    from dataclasses import replace
+
+    from sightline.explain import explain
+    from sightline.intents import Intent
+    from sightline.simulate import SimulationReport
+
+    intent = replace(Intent("transfer_sol", "76nKQ7uBMB482NqeVxUjyNXbq2kq741TmbKM9umLTRX1", "0.01", decimals=9,
+                            symbol="SOL"), label="Coffee Shop", memo="order-42")
+    report = SimulationReport(ok=True, fee_lamports=5000, programs=["11111111111111111111111111111111"],
+                              recipient_received="0.01", sol_delta_lamports=-10_005_000)
+    text = explain(intent, report)
+    assert text.startswith("You send 0.01 SOL to Coffee Shop (76nK…TRX1).") and 'Memo: "order-42".' in text
