@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.4 — Solana Pay links and unattended payments
+- `sightline_pay` / `sightline_preview` take a Solana Pay transfer link (`link`): recipient, amount,
+  `spl-token`, `memo` (Memo instruction) and `reference` keys (read-only accounts on the transfer).
+  The preview names the payee from `label` and shows the memo. Transaction-request links, links
+  without an amount and links that disagree with other arguments are refused. The approval cache
+  is keyed on the exact link.
+- Firewall: a payment to the wallet's own address is a clear `self_payment` BLOCK.
+- Docs: Solana Pay links, unattended payments under a grant (live cron run), and a warning against
+  `approvals.cron_mode: approve` / `single_query_mode: approve`.
+
 ## 0.6.3 — docs only
 - Demo GIF at the top of the README, built from the real Desktop pane screenshots.
 - Cropped pane screenshots (`docs/screenshots/pane-*.png`).
