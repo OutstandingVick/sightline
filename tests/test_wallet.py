@@ -94,3 +94,34 @@ def test_balances(wallet):
     assert out["sol"] == "1.5"
     assert {"mint": usdc, "symbol": "USDC", "amount": "2.5", "decimals": 6} in out["tokens"]
     assert any(t["symbol"].startswith(other[:4]) and "…" in t["symbol"] for t in out["tokens"])
+
+
+def test_memo_and_references_follow_solana_pay(wallet):
+    from sightline.simulate import instruction_kinds, message_writable
+
+    ref = str(Keypair().pubkey())
+    built = wallet().build_sol_transfer(DEST, 0.01, memo="order-42", references=[ref])
+    msg = built.tx.message
+    assert instruction_kinds(msg) == ["Memo.Memo", "System.Transfer"]
+    keys = [str(k) for k in msg.account_keys]
+    transfer_accounts = [keys[i] for i in msg.instructions[1].accounts]
+    assert transfer_accounts[-1] == ref and ref not in message_writable(msg)  # read-only, non-signer
+    assert bytes(msg.instructions[0].data) == b"order-42"
+
+
+def test_spl_reference_on_transfer_checked(wallet):
+    mint = Pubkey.new_unique()
+    ref = str(Keypair().pubkey())
+    built = wallet(mints={mint: 6}).build_spl_transfer(DEST, mint, 1, references=[ref])
+    from sightline.simulate import instruction_kinds
+
+    msg = built.tx.message
+    assert instruction_kinds(msg)[-1] == "Token.TransferChecked"
+    keys = [str(k) for k in msg.account_keys]
+    assert keys[msg.instructions[-1].accounts[-1]] == ref
+
+
+def test_bad_reference_is_rejected(wallet):
+    with pytest.raises(WalletError) as e:
+        wallet().build_sol_transfer(DEST, 0.01, references=["nope"])
+    assert e.value.code == "invalid_address"
