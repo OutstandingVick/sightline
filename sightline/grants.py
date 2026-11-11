@@ -20,7 +20,6 @@ from decimal import Decimal
 from . import audit
 from .db import connect
 
-
 DAY = 24 * 3600
 PERIODS = {"day": DAY, "week": 7 * DAY, "month": 30 * DAY}
 
