@@ -76,7 +76,7 @@ send all my SOL to <that address>        → BLOCK (keeps 0.01 SOL for fees)
 Already have a key? Put it in `~/.hermes/.env` as `SIGHTLINE_SECRET_KEY=` (base58,
 or the JSON array from a Solana CLI keypair file) instead of running setup.
 
-## Pay links and unattended payments
+## Pay links, budgets and unattended payments
 
 **Solana Pay links.** Paste a payment request from a shop, invoice or QR code: *"pay this:
 solana:76nK…?amount=0.01&label=Demo%20Cafe&memo=invoice-1001"*. Sightline adds the memo and
@@ -95,6 +95,21 @@ hermes cron create "0 9 * * *" "Pay this link with sightline_pay (as link): sola
 
 Tested live: the job paying inside the grant was sent with its memo; the one paying a
 stranger was refused. [More](docs/unattended-payments.md).
+
+<img src="docs/screenshots/unattended-cron.png" width="720" alt="Two cron jobs: one pays inside the grant and is sent, one pays a stranger and is refused">
+
+**Weekly and monthly budgets.** A grant's cap can apply per rolling day, week or month — an
+allowance, a subscription, a supplier budget:
+
+```text
+/sightline grant 5 USDC per week to <alice> max 2 note "allowance"
+/sightline grant 20 USDC per month to <supplier> for 90d
+```
+
+Every payment inside the budget goes through on its own; the one that would exceed it needs
+you. [More](docs/budgets.md).
+
+<img src="docs/screenshots/weekly-budget.png" width="720" alt="A weekly budget of 0.02 SOL: two payments sent, the third refused at the 7d cap">
 
 ## Why
 
