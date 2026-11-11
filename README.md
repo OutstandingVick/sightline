@@ -2,12 +2,17 @@
 
 **Give your Hermes agent a Solana wallet without giving it your wallet.**
 
+- **Pays only inside limits you set.** Grants (token, cap per day, week or month, per-payment
+  max, recipients, expiry) are created by you, never the model. Everything else needs your
+  approval or is blocked.
+- **Checks every transaction before signing.** Simulated on the RPC, explained in plain English,
+  and blocked on drains, unknown programs or any mismatch. The model never sees the key.
+- **Works for real payments, even unattended.** Pays Solana Pay links (memo + reference), and cron
+  jobs or bots can pay inside a grant with nobody watching.
+
 <img src="docs/screenshots/demo.gif" width="400" alt="Sightline pane in Hermes Desktop: a grant, an ALLOW, a drain blocked, revoke, then APPROVE">
 
-Sightline is a transaction firewall plugin for [Hermes Agent](https://github.com/NousResearch/hermes-agent).
-The agent can check balances, preview payments and pay — but only inside spending
-grants **you** create, and only after every transaction is simulated and checked.
-The private key never reaches the model. Devnet by default.
+A transaction firewall plugin for [Hermes Agent](https://github.com/NousResearch/hermes-agent). Devnet by default.
 
 > **Judges: the 2-minute path**
 >
@@ -31,59 +36,6 @@ The private key never reaches the model. Devnet by default.
 > `/sightline log` shows every decision; `/sightline verify` checks the hash chain.
 > Funding takes a minute at https://faucet.solana.com (see [Get devnet SOL](#get-devnet-sol));
 > without it, every decision above still shows the firewall's real reason.
-
-## Why
-
-An agent with a wallet reads web pages, emails and tool output. Any of them can carry
-hidden text telling it to send your funds somewhere else (prompt injection). Prompts, system messages
-and skills can't fix that, because the model itself is what gets attacked: whatever
-it can be talked into, it can do.
-
-So Sightline takes the decision away from the model. The model can *ask* to pay. Code
-it can't influence decides whether that payment matches a limit a human set, and
-checks what the transaction would actually do before it is signed.
-
-## How it works
-
-```mermaid
-flowchart LR
-    H([You]) -- "/sightline grant" --> G[(Grants)]
-    M([Model]) -- "sightline_pay(recipient, amount, token)" --> B[Build transfer]
-    B --> S[Simulate on RPC]
-    S --> F{Firewall}
-    G --> F
-    F -- "BLOCK" --> X[Nothing sent]
-    F -- "APPROVE: no grant covers it" --> A{You approve?}
-    A -- no / nobody to ask --> X
-    A -- yes --> K
-    F -- "ALLOW: inside a grant" --> K[Sign + send]
-    K --> L[(Hash-chained audit log)]
-    F --> L
-```
-
-1. **Grants** — you create them with a slash command: token, daily cap, max per
-   transaction, recipients, expiry. Only you can create, widen or revoke them.
-2. **Simulate** — the exact transaction runs on the RPC first; Sightline reads the
-   real balance changes, programs and accounts it would touch.
-3. **Firewall** — **BLOCK** (hard rules, below), **ALLOW** (inside an active grant)
-   or **APPROVE** (no grant covers it: Hermes asks you once; with nobody to ask, it is
-   blocked). It runs in Hermes' `pre_tool_call` hook *and again* right before signing.
-4. **Sign** — only then, with a key the model never sees.
-5. **Audit** — every decision, send and grant change goes into an append-only,
-   hash-chained log (`/sightline verify`).
-
-## Security model
-
-| The model CAN | The model CANNOT |
-|---|---|
-| read status, balances and grants | see or export the private key |
-| preview a payment (simulate, never signs) | submit raw transactions or instructions |
-| request a SOL or SPL token transfer | create, widen, extend or revoke a grant |
-| | skip simulation or the firewall |
-| | pay outside a grant without you approving that one payment |
-
-Grants are human-only: there is no model-callable tool that writes them, and the
-Desktop pane can only revoke. Details and known limits: [docs/security-model.md](docs/security-model.md).
 
 ## Quickstart (devnet, under 5 minutes)
 
@@ -144,7 +96,73 @@ hermes cron create "0 9 * * *" "Pay this link with sightline_pay (as link): sola
 Tested live: the job paying inside the grant was sent with its memo; the one paying a
 stranger was refused. [More](docs/unattended-payments.md).
 
-## Slash commands (you only)
+## Why
+
+An agent with a wallet reads web pages, emails and tool output. Any of them can carry
+hidden text telling it to send your funds somewhere else (prompt injection). Prompts, system messages
+and skills can't fix that, because the model itself is what gets attacked: whatever
+it can be talked into, it can do.
+
+So Sightline takes the decision away from the model. The model can *ask* to pay. Code
+it can't influence decides whether that payment matches a limit a human set, and
+checks what the transaction would actually do before it is signed.
+
+## How it works
+
+```mermaid
+flowchart LR
+    H([You]) -- "/sightline grant" --> G[(Grants)]
+    M([Model]) -- "sightline_pay(recipient, amount, token)" --> B[Build transfer]
+    B --> S[Simulate on RPC]
+    S --> F{Firewall}
+    G --> F
+    F -- "BLOCK" --> X[Nothing sent]
+    F -- "APPROVE: no grant covers it" --> A{You approve?}
+    A -- no / nobody to ask --> X
+    A -- yes --> K
+    F -- "ALLOW: inside a grant" --> K[Sign + send]
+    K --> L[(Hash-chained audit log)]
+    F --> L
+```
+
+1. **Grants** — you create them with a slash command: token, daily cap, max per
+   transaction, recipients, expiry. Only you can create, widen or revoke them.
+2. **Simulate** — the exact transaction runs on the RPC first; Sightline reads the
+   real balance changes, programs and accounts it would touch.
+3. **Firewall** — **BLOCK** (hard rules, below), **ALLOW** (inside an active grant)
+   or **APPROVE** (no grant covers it: Hermes asks you once; with nobody to ask, it is
+   blocked). It runs in Hermes' `pre_tool_call` hook *and again* right before signing.
+4. **Sign** — only then, with a key the model never sees.
+5. **Audit** — every decision, send and grant change goes into an append-only,
+   hash-chained log (`/sightline verify`).
+
+## Security model
+
+| The model CAN | The model CANNOT |
+|---|---|
+| read status, balances and grants | see or export the private key |
+| preview a payment (simulate, never signs) | submit raw transactions or instructions |
+| request a SOL or SPL token transfer | create, widen, extend or revoke a grant |
+| | skip simulation or the firewall |
+| | pay outside a grant without you approving that one payment |
+
+Grants are human-only: there is no model-callable tool that writes them, and the
+Desktop pane can only revoke. Details and known limits: [docs/security-model.md](docs/security-model.md).
+
+## Desktop pane
+
+Hermes Desktop gets a **Sightline** pane: network, wallet and balances, active grants
+(usage bar, countdown, **Revoke**) and a feed of every ALLOW / APPROVE / BLOCK with
+explorer links. Turn it on in **Capabilities → Plugins**, then ⌘K → *Sightline: Open
+firewall*. More: [docs/desktop-pane.md](docs/desktop-pane.md).
+
+| ALLOW inside a grant | Drain blocked | APPROVE after revoke (dark) |
+|---|---|---|
+| ![ALLOW and send](docs/screenshots/pane-03-allow-sent-light.png) | ![BLOCK](docs/screenshots/pane-04-block-light.png) | ![APPROVE, dark](docs/screenshots/pane-06-approve-after-revoke-dark.png) |
+
+## Reference
+
+### Slash commands (you only)
 
 | Command | Does |
 |---|---|
@@ -161,7 +179,7 @@ stranger was refused. [More](docs/unattended-payments.md).
 The same commands except `grant` also work in a terminal: `hermes sightline setup|grants|revoke|log|verify`.
 `grant` is chat-only on purpose — the agent's own terminal tool could run a CLI command.
 
-## Tools (what the model gets)
+### Tools (what the model gets)
 
 | Tool | Does |
 |---|---|
@@ -177,7 +195,7 @@ Every error comes back as `{error, message, next_step}` — for example
 `missing_secret`, `rpc_timeout`, `unknown_token`, `insufficient_token`,
 `blockhash_expired` — never a traceback.
 
-## Firewall rules
+### Firewall rules
 
 Hard **BLOCK**s, which no grant or approval overrides:
 
@@ -192,7 +210,7 @@ Hard **BLOCK**s, which no grant or approval overrides:
 Otherwise **ALLOW** when an active grant covers token, network, recipient, per-tx max
 and the rolling 24h cap; else **APPROVE**.
 
-## Configuration
+### Configuration
 
 Set in `~/.hermes/.env` (restart Hermes after changing):
 
@@ -202,7 +220,7 @@ Set in `~/.hermes/.env` (restart Hermes after changing):
 | `SIGHTLINE_RPC_URL` | `https://api.devnet.solana.com` | Solana RPC endpoint |
 | `SIGHTLINE_ALLOW_MAINNET` | off | `1` to allow mainnet |
 
-### Mainnet
+#### Mainnet
 
 Off by default; a custom RPC is checked against the mainnet genesis hash so it can't
 slip through. With `SIGHTLINE_ALLOW_MAINNET=1` and a mainnet RPC, every preview and
@@ -210,17 +228,6 @@ block message starts with **⚠ MAINNET — real funds**, and the pane's network
 turns red. **These are real, irreversible payments.** The firewall limits what a
 compromised agent can do; it doesn't make mainnet risk-free. Use a dedicated wallet
 holding only what you're prepared to lose, and small grants.
-
-## Desktop pane
-
-Hermes Desktop gets a **Sightline** pane: network, wallet and balances, active grants
-(usage bar, countdown, **Revoke**) and a feed of every ALLOW / APPROVE / BLOCK with
-explorer links. Turn it on in **Capabilities → Plugins**, then ⌘K → *Sightline: Open
-firewall*. More: [docs/desktop-pane.md](docs/desktop-pane.md).
-
-| ALLOW inside a grant | Drain blocked | APPROVE after revoke (dark) |
-|---|---|---|
-| ![ALLOW and send](docs/screenshots/pane-03-allow-sent-light.png) | ![BLOCK](docs/screenshots/pane-04-block-light.png) | ![APPROVE, dark](docs/screenshots/pane-06-approve-after-revoke-dark.png) |
 
 ## Tests
 
