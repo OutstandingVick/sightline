@@ -247,13 +247,14 @@ holding only what you're prepared to lose, and small grants.
 
 ## Tests
 
-**256 Python tests** (254 offline + 2 opt-in live devnet) and **7 JS tests** for the
-Desktop half. **70 are attack cases** (`pytest -m attack`): prompt-injected payments,
+**270 Python tests** (268 offline + 2 opt-in live devnet) and **8 JS tests** for the
+Desktop half. **71 are attack cases** (`pytest -m attack`): prompt-injected payments,
 payments outside or above a grant, unknown programs and authority/approve/close
 instructions, simulation mismatches, bypassing the hook, "always approve" turning into
 a blanket approval, parallel payments racing one cap, the model trying to create a
 grant, key leakage through any output, audit-log tampering, drains and policy at zero
-balance, and Solana Pay links that try to widen a grant or smuggle in a transaction. 15 more cover every
+balance, and Solana Pay links that try to widen a grant or smuggle in a transaction, and splitting payments
+to get around a weekly budget. 15 more cover every
 newcomer failure path (missing key, RPC down, faucet limits, …).
 
 ```bash
