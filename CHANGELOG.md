@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.3 — docs only
+- Demo GIF at the top of the README, built from the real Desktop pane screenshots.
+- Cropped pane screenshots (`docs/screenshots/pane-*.png`).
+- "Judges: the 2-minute path" box with expected results for a funded and an empty wallet.
+
 ## 0.6.2
 - Declare `requires_hermes: ">=0.23.0"` (the version Sightline is built and tested on).
 
