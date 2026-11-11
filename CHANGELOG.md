@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.5 — budgets and a clearer README
+- Budgets: `/sightline grant <cap> <token> per week|month …` applies the cap per rolling 7 or 30 days
+  (default stays 24h). Spend is summed from the audit log over the grant's period; a weekly or monthly
+  grant lasts at least one period unless `for` says otherwise. Grant text, list, log, status tool and
+  the Desktop pane show the period.
+- README leads with what Sightline does (three bullets), the demo GIF and the judges' path; reference
+  tables moved under "Reference". New cards from the live runs: unattended cron payments and a weekly
+  budget.
+- Live: weekly budget on devnet (two payments sent, the third refused at the 7d cap).
+
 ## 0.6.4 — Solana Pay links and unattended payments
 - `sightline_pay` / `sightline_preview` take a Solana Pay transfer link (`link`): recipient, amount,
   `spl-token`, `memo` (Memo instruction) and `reference` keys (read-only accounts on the transfer).
