@@ -123,8 +123,8 @@ def _grant_summaries(network: str) -> list[dict]:
         if status != "active" and now - (g.revoked_at or g.expires_at) > 24 * 3600:
             continue
         out.append({"id": g.id, "status": status, "network": g.network, "token": g.symbol,
-                    "max_per_tx": g.max_per_tx, "daily_cap": g.daily_cap,
-                    "remaining_24h": str(grants.remaining(g, now=now)) if status == "active" else "0",
+                    "max_per_tx": g.max_per_tx, "cap": g.daily_cap, "cap_period": g.period_label,
+                    "remaining": str(grants.remaining(g, now=now)) if status == "active" else "0",
                     "recipients": g.recipients, "expires_in_s": max(0, int(g.expires_at - now))})
     return out
 

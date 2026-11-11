@@ -53,6 +53,7 @@ def grant_view(g, now: float) -> dict:
     return {
         "id": g.id, "status": status, "network": g.network, "token": g.token, "symbol": g.symbol,
         "daily_cap": g.daily_cap, "max_per_tx": g.max_per_tx,
+        "period_s": g.period_s, "period": g.period_label,  # the cap applies per this rolling period
         "used_24h": None if used is None else _plain(used),
         "remaining_24h": None if remaining is None else _plain(remaining),
         "recipients": list(g.recipients), "note": g.note,
@@ -82,7 +83,8 @@ def audit_view(e: dict, settings) -> dict:
     elif e["event"] == "failed":
         view.update(ref=d.get("ref"), error=d.get("error"), message=d.get("message"))
     elif e["event"] in ("grant_created", "grant_revoked"):
-        view.update(grant_id=d.get("id"), symbol=d.get("symbol"), daily_cap=d.get("daily_cap"))
+        view.update(grant_id=d.get("id"), symbol=d.get("symbol"), daily_cap=d.get("daily_cap"),
+                    period=grants.period_label(d.get("period_s") or grants.DAY))
     return view
 
 

@@ -42,7 +42,7 @@ def test_status_exposes_grants_read_only(plugin, ctx, keypair):
     grants.create(network="devnet", token="SOL", symbol="SOL", daily_cap=Decimal(1), max_per_tx=None,
                   recipients=["*"], duration_s=60)
     out = json.loads(ctx.tools["sightline_status"]["handler"]({}))
-    assert out["grants"][0]["remaining_24h"] == "1" and "read-only" in out["note"]
+    assert out["grants"][0]["remaining"] == "1" and out["grants"][0]["cap_period"] == "24h" and "read-only" in out["note"]
 
 
 def test_desktop_half_cannot_create_grants():
