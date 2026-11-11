@@ -76,8 +76,8 @@ def verify(conn=None) -> tuple[bool, str]:
     return True, f"{len(rows)} entries, chain intact (head {prev[:12]})"
 
 
-def spent_24h(grant_id: str, conn=None, now: float | None = None) -> Decimal:
-    """Sum of reserved spends against a grant in the last 24h, minus those that failed.
+def spent_in_window(grant_id: str, window_s: float, conn=None, now: float | None = None) -> Decimal:
+    """Sum of reserved spends against a grant in the last ``window_s`` seconds, minus those that failed.
 
     Derived from the log (not a counter), so it can't drift from what actually happened.
     """
@@ -86,9 +86,9 @@ def spent_24h(grant_id: str, conn=None, now: float | None = None) -> Decimal:
     conn = conn or connect()
     try:
         rows = conn.execute(
-            "SELECT seq, data FROM audit WHERE event = 'execute' AND ts > ?", (now - DAY,)).fetchall()
+            "SELECT seq, data FROM audit WHERE event = 'execute' AND ts > ?", (now - window_s,)).fetchall()
         failed = {json.loads(d)["ref"] for (d,) in conn.execute(
-            "SELECT data FROM audit WHERE event = 'failed' AND ts > ?", (now - DAY - 600,)).fetchall()}
+            "SELECT data FROM audit WHERE event = 'failed' AND ts > ?", (now - window_s - 600,)).fetchall()}
     finally:
         if own:
             conn.close()
@@ -98,3 +98,7 @@ def spent_24h(grant_id: str, conn=None, now: float | None = None) -> Decimal:
         if d.get("grant_id") == grant_id and seq not in failed:
             total += Decimal(d["amount"])
     return total
+
+
+def spent_24h(grant_id: str, conn=None, now: float | None = None) -> Decimal:
+    return spent_in_window(grant_id, DAY, conn=conn, now=now)
