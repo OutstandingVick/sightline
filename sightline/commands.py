@@ -74,9 +74,10 @@ def parse_grant(argv: list[str]) -> dict:
     network = _network()
     token, symbol = _resolve_token(argv[1], network)
     out = {"network": network, "token": token, "symbol": symbol, "daily_cap": cap, "max_per_tx": None,
-           "recipients": [], "duration_s": 24 * 3600, "note": ""}
+           "recipients": [], "duration_s": 24 * 3600, "note": "", "period_s": grants.DAY}
     rest = argv[2:]
     i = 0
+    period_set = duration_set = False
     while i < len(rest):
         word = rest[i].lower()
         if i + 1 >= len(rest):
@@ -92,16 +93,26 @@ def parse_grant(argv: list[str]) -> dict:
                     raise UsageError(str(exc)) from None
         elif word == "for":
             out["duration_s"] = parse_duration(value)
+            duration_set = True
         elif word == "max":
             try:
                 out["max_per_tx"] = to_decimal(value)
             except AmountError as exc:
                 raise UsageError(f"bad max: {exc}") from None
+        elif word == "per":
+            period = grants.PERIODS.get(value.lower()) or {"24h": grants.DAY, "7d": 7 * grants.DAY,
+                                                          "30d": 30 * grants.DAY}.get(value.lower())
+            if period is None:
+                raise UsageError(f"bad period {value!r}; use per day, per week or per month")
+            out["period_s"] = period
+            period_set = True
         elif word == "note":
             out["note"] = value[:200]
         else:
             raise UsageError(f"unexpected '{rest[i]}'")
         i += 2
+    if period_set and not duration_set:  # a weekly budget that expires after a day would be pointless
+        out["duration_s"] = max(out["duration_s"], out["period_s"])
     if not out["recipients"]:
         raise UsageError("say who may be paid: `to <addr>[,<addr>]` (or `to any` to allow every recipient)")
     return out
