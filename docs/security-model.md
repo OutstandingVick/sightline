@@ -62,6 +62,10 @@ broken entry.
   approve`** (for cron jobs) in Hermes' config auto-approve plugin approval requests when
   nobody is present. Leave both unset: without them, an unattended run can pay only inside
   a grant ([unattended payments](unattended-payments.md)).
+- **Budgets.** A grant's cap applies per rolling 24h, 7 days or 30 days, summed from the
+  audit log at decision time (inside the same transaction that reserves the spend), so many
+  small payments or parallel calls can't exceed it. A longer period widens nothing on its own:
+  only the human creates the grant and picks the period.
 - **Solana Pay links** are parsed into the same intent as a typed payment; a link can't
   widen a grant, an approval is bound to the exact link, and transaction-request links
   (`solana:https://…`), which would hand Sightline a ready-made transaction, are refused.
