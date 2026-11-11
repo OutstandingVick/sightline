@@ -101,3 +101,7 @@ test('the stylesheet is removed on dispose', async () => {
   ctx.disposers.forEach(fn => fn())
   assert.ok(removed)
 })
+
+test('grant usage label follows the grant period', () => {
+  assert.match(SOURCE, /used \(\$\{grant\.period \|\| '24h'\}\)/)
+})

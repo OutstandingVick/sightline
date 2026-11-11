@@ -154,3 +154,16 @@ def test_no_wallet_tells_the_pane_what_to_do(monkeypatch):
     monkeypatch.delenv("SIGHTLINE_SECRET_KEY", raising=False)
     err = get_state()["wallet_error"]
     assert err["code"] == "missing_secret" and "/sightline setup" in err["next_step"]
+
+
+def test_grant_view_reports_period(client, keypair):
+    from decimal import Decimal
+
+    from sightline import grants
+    from sightline.state import get_state
+
+    grants.create(network="devnet", token="SOL", symbol="SOL", daily_cap=Decimal(5), max_per_tx=None,
+                  recipients=["*"], duration_s=7 * 86400, period_s=7 * 86400)
+    s = get_state()
+    assert s["grants"][0]["period"] == "7d" and s["grants"][0]["period_s"] == 7 * 86400
+    assert s["recent_audit"][0]["period"] == "7d"
