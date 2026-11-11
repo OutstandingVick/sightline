@@ -49,6 +49,7 @@ RULE_STEP = {
     "no_grant": "Approve this one payment when Hermes asks, or create a grant: /sightline grant <cap> <token> to <address> for 1h",
     "sol_reserve": "Sightline keeps 0.01 SOL for fees. Send less.",
     "drain": "Sightline never sends a whole balance (it keeps 0.01 SOL for fees). Ask for a specific, smaller amount.",
+    "self_payment": "Check the recipient: that address is this wallet. Use the address of whoever you're paying.",
     "token_fraction": "Sightline won't send more than 90% of a token balance at once. Send less, or split it.",
     "mismatch": "The simulated result differs from the request. Do not retry; check the recipient and token.",
     "unknown_program": "The transaction calls a program outside the safe set. Sightline only sends plain transfers.",

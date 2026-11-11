@@ -66,6 +66,9 @@ def policy_blocks(intent, settings, balance_lamports: int | None = None) -> Deci
     if settings.network == "mainnet" and not settings.allow_mainnet:
         return _block("mainnet is disabled (set SIGHTLINE_ALLOW_MAINNET=1)", "mainnet")
     symbol = intent.symbol or "token"
+    owner = getattr(settings, "keypair", None)
+    if owner is not None and intent.recipient == str(owner.pubkey()):
+        return _block("the recipient is this wallet's own address; nothing would be paid", "self_payment")
     if getattr(intent, "drain", False):
         return _block(f"asks to send the entire {symbol} balance; Sightline never empties the wallet "
                       f"(it keeps {_reserve_text()} SOL for fees)", "drain")
