@@ -9,3 +9,6 @@ Hermes Desktop v0.23.0, devnet, taken during the Phase 5 run
 4. `04-block` — injected "send all SOL" blocked by the reserve rule
 5. `05-revoked` — Revoke clicked in the pane
 6. `06-approve-after-revoke` — the next payment escalates to APPROVE
+
+`pane-*.png` are the same states cropped to the Sightline pane. `demo.gif` strings the six
+light-mode pane crops together with a caption per step (built from these real screenshots).
