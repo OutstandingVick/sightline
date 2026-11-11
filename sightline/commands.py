@@ -2,7 +2,7 @@
 
 Slash commands are typed by the user; the model has no tool that reaches this code.
 
-  /sightline grant <amount_per_day> <token> to <addr>[,<addr>]|any [for 1h|24h|7d] [max <per_tx>] [note "..."]
+  /sightline grant <cap> <token> [per day|week|month] to <addr>[,<addr>]|any [for 1h|24h|7d|30d] [max <per_tx>] [note "..."]
   /sightline grants
   /sightline revoke <id> | /sightline revoke all
   /sightline log [n]
@@ -24,7 +24,7 @@ from .config import DEFAULT_RPC_URL, network_from_url, read_env
 from .tokens import KNOWN_MINTS, AddressError, parse_address, short
 
 USAGE = """Usage:
-  /sightline grant <amount_per_day> <token> to <addr>[,<addr>]|any [for 1h|24h|7d] [max <per_tx>] [note "..."]
+  /sightline grant <cap> <token> [per day|week|month] to <addr>[,<addr>]|any [for 1h|24h|7d|30d] [max <per_tx>] [note "..."]
      e.g. /sightline grant 5 USDC to <address> for 1h max 2
   /sightline grants              list grants and what is left of each
   /sightline revoke <id>|all     revoke one or every grant
@@ -143,7 +143,7 @@ def _recipients(g) -> str:
 def describe(g, now: float | None = None) -> str:
     now = time.time() if now is None else now
     status = g.status(now)
-    left = (f"{_n(grants.remaining(g, now=now))}/{_n(g.daily_cap)} {g.symbol} left (24h)"
+    left = (f"{_n(grants.remaining(g, now=now))}/{_n(g.daily_cap)} {g.symbol} left ({g.period_label})"
             if status == "active" else status)
     expiry = f"expires in {_left(g.expires_at - now)}" if status == "active" else f"ended {_when(g.revoked_at or g.expires_at)}"
     note = f' — "{g.note}"' if g.note else ""
@@ -158,7 +158,7 @@ def cmd_grant(argv: list[str]) -> str:
     except ValueError as exc:
         raise UsageError(str(exc)) from None
     who = "ANY recipient" if g.recipients == ["*"] else _recipients(g)
-    return (f"Granted {g.id}: the agent may send up to {_n(g.daily_cap)} {g.symbol} per rolling 24h "
+    return (f"Granted {g.id}: the agent may send up to {_n(g.daily_cap)} {g.symbol} per rolling {g.period_label} "
             f"(max {_n(g.max_per_tx)} per tx) to {who} on {g.network.upper()}, until {_when(g.expires_at)}."
             + (f' Note: "{g.note}".' if g.note else "")
             + f"\nRevoke any time: /sightline revoke {g.id}")
@@ -206,7 +206,8 @@ def _summarise(e: dict) -> str:
     if ev == "failed":
         return f"failed #{d.get('ref')}: {d.get('error')} {d.get('message') or ''}".rstrip()
     if ev == "grant_created":
-        return f"grant {d.get('id')} created: {d.get('daily_cap')} {d.get('symbol')}/24h"
+        return (f"grant {d.get('id')} created: {d.get('daily_cap')} {d.get('symbol')}/"
+                f"{grants.period_label(d.get('period_s') or grants.DAY)}")
     if ev == "grant_revoked":
         return f"grant {d.get('id')} revoked"
     return ev
