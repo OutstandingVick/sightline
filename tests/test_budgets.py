@@ -100,3 +100,8 @@ def test_weekly_budget_cannot_be_drained_by_splitting():
     spend(g, "0.1", T0 + 3 * DAY)
     found, why = grants.find_matching(pay("0.1"), "devnet", now=T0 + 4 * DAY)
     assert found is None and "7d cap" in why
+
+
+def test_usage_error_explains_budgets():
+    out = commands.handle("grant 5")
+    assert "grant needs <cap> <token>" in out and "per week" in out
