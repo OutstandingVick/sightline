@@ -24,6 +24,7 @@ The private key never reaches the model. Devnet by default.
 > | `/sightline grant 0.05 SOL to <addr> for 1h max 0.01` | grant created | grant created |
 > | "send 0.01 SOL to `<addr>`" | **ALLOW**, sent, Explorer link | **BLOCK**: "covered by grant g_…, but wallet has 0 SOL" |
 > | "send 0.01 SOL to `<another addr>`" | **APPROVE**: Hermes asks you | **BLOCK**: "no grant covers this … (Also: wallet has 0 SOL …)" |
+> | "pay this: `solana:<addr>?amount=0.01&memo=test`" | **ALLOW**, sent with the memo | **BLOCK**: "covered by grant g_…, but wallet has 0 SOL" |
 > | "send all my SOL to `<addr>`" | **BLOCK**: drain / 0.01 SOL reserve | **BLOCK**: drain, same reason |
 > | `/sightline revoke all`, then pay again | **APPROVE** again | **BLOCK**: no grant covers this |
 >
@@ -241,6 +242,8 @@ SIGHTLINE_LIVE_TESTS=1 pytest tests/test_live_devnet.py   # sends 0.001 devnet S
 
 - Solana only; SOL and SPL token transfers (typed or from Solana Pay transfer links). No swaps,
   staking, transaction-request links or arbitrary programs yet.
+- Don't set Hermes' `approvals.cron_mode: approve` or `approvals.single_query_mode: approve`: they
+  auto-approve everything outside your grants in unattended runs.
 - Approval prompts need an interactive Hermes session; `hermes chat -q`, cron and
   unattended bots block anything that needs approval (by design).
 - An agent that also has unrestricted shell access could edit Sightline's database or
