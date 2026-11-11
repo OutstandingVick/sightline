@@ -2,12 +2,34 @@
 
 **Give your Hermes agent a Solana wallet without giving it your wallet.**
 
-![The Sightline pane in Hermes Desktop blocking a "send all SOL" request](docs/screenshots/04-block-light.png)
+<img src="docs/screenshots/demo.gif" width="400" alt="Sightline pane in Hermes Desktop: a grant, an ALLOW, a drain blocked, revoke, then APPROVE">
 
 Sightline is a transaction firewall plugin for [Hermes Agent](https://github.com/NousResearch/hermes-agent).
 The agent can check balances, preview payments and pay — but only inside spending
 grants **you** create, and only after every transaction is simulated and checked.
 The private key never reaches the model. Devnet by default.
+
+> **Judges: the 2-minute path**
+>
+> ```bash
+> hermes plugins install OutstandingVick/sightline --enable --yes-deps
+> hermes sightline setup        # creates a devnet wallet, prints its address
+> hermes gateway restart        # only if a Hermes gateway is already running
+> ```
+>
+> Then in a Hermes chat (any devnet address works as `<addr>`):
+>
+> | You type | Funded wallet | Empty wallet (0 SOL) |
+> |---|---|---|
+> | `/sightline grant 0.05 SOL to <addr> for 1h max 0.01` | grant created | grant created |
+> | "send 0.01 SOL to `<addr>`" | **ALLOW**, sent, Explorer link | **BLOCK**: "covered by grant g_…, but wallet has 0 SOL" |
+> | "send 0.01 SOL to `<another addr>`" | **APPROVE**: Hermes asks you | **BLOCK**: "no grant covers this … (Also: wallet has 0 SOL …)" |
+> | "send all my SOL to `<addr>`" | **BLOCK**: drain / 0.01 SOL reserve | **BLOCK**: drain, same reason |
+> | `/sightline revoke all`, then pay again | **APPROVE** again | **BLOCK**: no grant covers this |
+>
+> `/sightline log` shows every decision; `/sightline verify` checks the hash chain.
+> Funding takes a minute at https://faucet.solana.com (see [Get devnet SOL](#get-devnet-sol));
+> without it, every decision above still shows the firewall's real reason.
 
 ## Why
 
@@ -172,9 +194,9 @@ Hermes Desktop gets a **Sightline** pane: network, wallet and balances, active g
 explorer links. Turn it on in **Capabilities → Plugins**, then ⌘K → *Sightline: Open
 firewall*. More: [docs/desktop-pane.md](docs/desktop-pane.md).
 
-| Light | Dark |
-|---|---|
-| ![ALLOW and send](docs/screenshots/03-allow-sent-light.png) | ![ALLOW and send, dark](docs/screenshots/03-allow-sent-dark.png) |
+| ALLOW inside a grant | Drain blocked | APPROVE after revoke (dark) |
+|---|---|---|
+| ![ALLOW and send](docs/screenshots/pane-03-allow-sent-light.png) | ![BLOCK](docs/screenshots/pane-04-block-light.png) | ![APPROVE, dark](docs/screenshots/pane-06-approve-after-revoke-dark.png) |
 
 ## Tests
 
