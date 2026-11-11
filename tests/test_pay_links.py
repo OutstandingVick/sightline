@@ -107,3 +107,14 @@ def test_link_drain_is_still_a_drain(env):
     env.grant(to=("*",), cap="100", per_tx="100")
     d, _ = env.call({"link": link(amount="9.995")})  # the fake cluster holds 10 SOL
     assert d["action"] == "block" and "0.01 SOL reserve" in d["message"]
+
+
+@attack
+def test_unattended_contract(env):
+    """What makes cron/bot payments safe: inside a grant the hook needs nobody (returns None);
+    outside it the hook demands a human (approve), which Hermes refuses when nobody is there."""
+    env.grant(to=(DEST,))
+    inside = env.hook(tool_name="sightline_pay", args={"link": link(to=DEST)}, session_id="cron", task_id="t")
+    outside = env.hook(tool_name="sightline_pay", args={"link": link(to=OTHER)}, session_id="cron", task_id="t")
+    assert inside is None
+    assert outside["action"] == "approve" and outside["rule_key"].startswith("sightline:")
