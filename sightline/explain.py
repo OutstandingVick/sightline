@@ -52,12 +52,19 @@ def explain(intent, report: SimulationReport) -> str:
     if not report.ok:
         return f"✗ Simulation failed: {report.error}. Nothing was sent."
     symbol = intent.symbol or short(intent.mint or "")
-    lines = [f"You send {Decimal(intent.amount).normalize():f} {symbol} to {short(intent.recipient)}."]
+    to = short(intent.recipient)
+    label = getattr(intent, "label", None)
+    if label:
+        to = f"{label[:60]} ({to})"
+    lines = [f"You send {Decimal(intent.amount).normalize():f} {symbol} to {to}."]
     detail = []
     if report.creates_accounts and intent.kind == "transfer_spl":
         detail.append(f"Creates their {symbol} account (≈{_sol(report.rent_lamports)} SOL rent).")
     elif report.creates_accounts:
         detail.append(f"Creates {len(report.created_accounts)} account(s) (≈{_sol(report.rent_lamports)} SOL rent).")
+    memo = getattr(intent, "memo", None)
+    if memo:
+        detail.append(f"Memo: \"{memo[:80]}\".")
     detail.append(f"Network fee ≈ {_sol(report.fee_lamports)} SOL.")
     detail.append("Programs: " + ", ".join(dict.fromkeys(program_label(p) for p in report.programs)) + ".")
     lines.append(" ".join(detail))
