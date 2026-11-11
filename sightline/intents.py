@@ -26,6 +26,9 @@ class Intent:
     decimals: int | None = None
     symbol: str | None = None
     drain: bool = False  # asked for the whole balance ("all"); always blocked, never built
+    memo: str | None = None  # Solana Pay memo (Memo program instruction)
+    references: tuple[str, ...] = ()  # Solana Pay reference keys (read-only accounts on the transfer)
+    label: str | None = None  # who asked to be paid, from a Solana Pay link (display only)
 
 
 DRAIN_WORDS = frozenset({"all", "max", "everything"})
@@ -95,8 +98,14 @@ class SimulationFailed(WalletError):
                 "simulation": self.preview.simulation.to_dict()}
 
 
-def pay_intent(wallet: Wallet, recipient: str, amount, token: str | None = "SOL") -> Intent:
-    """Validate tool arguments and resolve the token into a concrete Intent."""
+def pay_intent(wallet: Wallet, recipient: str, amount, token: str | None = "SOL", link: str | None = None) -> Intent:
+    """Validate tool arguments and resolve the token into a concrete Intent.
+
+    ``link`` is a Solana Pay transfer request; it supplies recipient, amount, token, memo and
+    references. Any recipient/amount/token also given must agree with it.
+    """
+    if link:
+        return _link_intent(wallet, link, recipient, amount, token)
     drain = isinstance(amount, str) and amount.strip().lower() in DRAIN_WORDS
     try:
         parse_address(recipient, "recipient")
@@ -114,11 +123,38 @@ def pay_intent(wallet: Wallet, recipient: str, amount, token: str | None = "SOL"
                   mint=str(ref.mint), decimals=mint.decimals, symbol=ref.symbol, drain=drain)
 
 
+def _link_intent(wallet: Wallet, link: str, recipient, amount, token) -> Intent:
+    from dataclasses import replace
+
+    from .solana_pay import LinkError, parse
+
+    try:
+        p = parse(link)
+    except LinkError as exc:
+        raise WalletError(exc.code, str(exc)) from None
+    given = {"recipient": (recipient or "").strip(), "amount": amount, "token": (token or "").strip()}
+    if given["recipient"] and given["recipient"] != p.recipient:
+        raise WalletError("invalid_payment_link", "the recipient given doesn't match the payment link")
+    if given["amount"] not in (None, "") and to_decimal(given["amount"]) != to_decimal(p.amount):
+        raise WalletError("invalid_payment_link", "the amount given doesn't match the payment link")
+    # "SOL" is the tool's default, so it counts as "not specified"; anything else must resolve to the link's token.
+    if given["token"] and given["token"].upper() != "SOL":
+        try:
+            ref = resolve_token(given["token"], wallet.settings.network)
+        except AddressError:
+            ref = None
+        if ref is None or ref.native or str(ref.mint) != p.token:
+            raise WalletError("invalid_payment_link", "the token given doesn't match the payment link")
+    intent = pay_intent(wallet, p.recipient, p.amount, p.token)
+    return replace(intent, memo=p.memo, references=p.references, label=p.label)
+
+
 def build(wallet: Wallet, intent: Intent):
+    extra = {"memo": intent.memo, "references": intent.references}
     if intent.kind == "transfer_sol":
-        return wallet.build_sol_transfer(intent.recipient, intent.amount)
+        return wallet.build_sol_transfer(intent.recipient, intent.amount, **extra)
     if intent.kind == "transfer_spl":
-        return wallet.build_spl_transfer(intent.recipient, intent.mint, intent.amount)
+        return wallet.build_spl_transfer(intent.recipient, intent.mint, intent.amount, **extra)
     raise WalletError("unsupported_intent", f"unsupported intent {intent.kind!r}")
 
 
