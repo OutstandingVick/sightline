@@ -4,7 +4,7 @@ User-issued, time-boxed, revocable spending permissions. Created, listed and rev
 ONLY through the human ``/sightline`` slash command; no model-callable tool writes here.
 
 A grant covers one token on one network, a set of recipients (or "*" when the user
-explicitly said "to any"), a per-transaction maximum and a rolling 24h cap. What has
+explicitly said "to any"), a per-transaction maximum and a cap per rolling 24h, 7 days or 30 days. What has
 been spent is computed from the audit log at check time, never stored as a counter.
 Expiry and revocation are also evaluated at check time.
 """
@@ -21,6 +21,14 @@ from . import audit
 from .db import connect
 
 
+DAY = 24 * 3600
+PERIODS = {"day": DAY, "week": 7 * DAY, "month": 30 * DAY}
+
+
+def period_label(period_s: int) -> str:
+    return {DAY: "24h", 7 * DAY: "7d", 30 * DAY: "30d"}.get(period_s, f"{period_s // 3600}h")
+
+
 @dataclass
 class Grant:
     id: str
@@ -34,6 +42,11 @@ class Grant:
     recipients: list[str] = field(default_factory=list)  # ["*"] = any recipient
     note: str = ""
     revoked_at: float | None = None
+    period_s: int = DAY  # the cap ("daily_cap" for history) applies per rolling period: 24h, 7d or 30d
+
+    @property
+    def period_label(self) -> str:
+        return period_label(self.period_s)
 
     def status(self, now: float | None = None) -> str:
         now = time.time() if now is None else now
@@ -60,7 +73,8 @@ def _save(conn, g: Grant) -> None:
 
 
 def create(*, network: str, token: str, symbol: str, daily_cap: Decimal, max_per_tx: Decimal | None,
-           recipients: list[str], duration_s: int, note: str = "", now: float | None = None) -> Grant:
+           recipients: list[str], duration_s: int, note: str = "", now: float | None = None,
+           period_s: int = DAY) -> Grant:
     if daily_cap <= 0:
         raise ValueError("daily cap must be positive")
     per_tx = daily_cap if max_per_tx is None else max_per_tx
@@ -70,6 +84,8 @@ def create(*, network: str, token: str, symbol: str, daily_cap: Decimal, max_per
         raise ValueError("name recipients with `to <addr>` (or `to any`)")
     if duration_s <= 0:
         raise ValueError("duration must be positive")
+    if period_s not in PERIODS.values():
+        raise ValueError("cap period must be per day, week or month")
     now = time.time() if now is None else now
     from .db import transaction
 
@@ -79,7 +95,7 @@ def create(*, network: str, token: str, symbol: str, daily_cap: Decimal, max_per
             gid = "g_" + secrets.token_hex(3)
         g = Grant(id=gid, created_at=now, expires_at=now + duration_s, network=network, token=token,
                   symbol=symbol, max_per_tx=str(per_tx), daily_cap=str(daily_cap),
-                  recipients=list(recipients), note=note)
+                  recipients=list(recipients), note=note, period_s=period_s)
         _save(conn, g)
         audit.append("grant_created", g.to_dict(), conn=conn, ts=now)
     return g
@@ -120,7 +136,7 @@ def revoke_all(now: float | None = None) -> list[str]:
 
 
 def remaining(g: Grant, conn=None, now: float | None = None) -> Decimal:
-    return Decimal(g.daily_cap) - audit.spent_24h(g.id, conn=conn, now=now)
+    return Decimal(g.daily_cap) - audit.spent_in_window(g.id, g.period_s, conn=conn, now=now)
 
 
 def find_matching(intent, network: str, conn=None, now: float | None = None) -> tuple[Grant | None, str]:
@@ -146,9 +162,9 @@ def find_matching(intent, network: str, conn=None, now: float | None = None) -> 
         if amount > Decimal(g.max_per_tx):
             reasons.append(f"exceeds per-tx max of grant {g.id}: {amount} > {g.max_per_tx}")
             continue
-        spent = audit.spent_24h(g.id, conn=conn, now=now)
+        spent = audit.spent_in_window(g.id, g.period_s, conn=conn, now=now)
         if spent + amount > Decimal(g.daily_cap):
-            reasons.append(f"exceeds daily cap of grant {g.id}: {spent}/{g.daily_cap} used")
+            reasons.append(f"exceeds the {g.period_label} cap of grant {g.id}: {spent}/{g.daily_cap} used")
             continue
         return g, ""
     return None, "; ".join(reasons)

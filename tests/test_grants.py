@@ -68,7 +68,7 @@ def test_daily_cap_rolls_and_ignores_failed():
     spend(g, 2, T0 + 20, failed=True)
     assert audit.spent_24h(g.id, now=T0 + 30) == 3
     _, why = grants.find_matching(sol("2.5"), "devnet", now=T0 + 30)
-    assert why == f"exceeds daily cap of grant {g.id}: 3/5 used"
+    assert why == f"exceeds the 24h cap of grant {g.id}: 3/5 used"
     assert grants.find_matching(sol(2), "devnet", now=T0 + 30)[0].id == g.id
     # 24h after the 3 SOL spend it no longer counts (grant still active: make a long one)
     long = make(cap="5", dur=3 * 86400, to=(B,))
