@@ -142,7 +142,8 @@ flowchart LR
 ```
 
 1. **Grants** — you create them with a slash command: token, daily cap, max per
-   transaction, recipients, expiry. Only you can create, widen or revoke them.
+   transaction, recipients, expiry. Sightline gives the model no way to create, widen or
+   revoke them (see the shell caveat under Security model).
 2. **Simulate** — the exact transaction runs on the RPC first; Sightline reads the
    real balance changes, programs and accounts it would touch.
 3. **Firewall** — **BLOCK** (hard rules, below), **ALLOW** (inside an active grant)
@@ -154,6 +155,8 @@ flowchart LR
 
 ## Security model
 
+Through Sightline's own tools:
+
 | The model CAN | The model CANNOT |
 |---|---|
 | read status, balances and grants | see or export the private key |
@@ -162,8 +165,18 @@ flowchart LR
 | | skip simulation or the firewall |
 | | pay outside a grant without you approving that one payment |
 
-Grants are human-only: there is no model-callable tool that writes them, and the
-Desktop pane can only revoke. Details and known limits: [docs/security-model.md](docs/security-model.md).
+Grants are human-only as far as Sightline goes: no model-callable tool writes them, the CLI has no
+`grant`, and the Desktop pane can only revoke.
+
+> **Shell access is outside that guarantee.** Grants are rows in `plugin-data/sightline/data.db`
+> and the key sits in your profile's `.env`. If the agent also has Hermes' *local* terminal backend,
+> its shell runs as you and could edit that file or read the key. Sightline makes edits hard to use:
+> a grant only counts if it matches the hash-chained audit entry written when you created it, and
+> if the log itself fails verification no grant is trusted. But a process with your file access
+> could still read the key. **For real funds (mainnet): use a sandboxed terminal backend (e.g. Docker)
+> or keep terminal commands on approval.**
+
+Details and known limits: [docs/security-model.md](docs/security-model.md).
 
 ## Desktop pane
 
@@ -271,8 +284,10 @@ SIGHTLINE_LIVE_TESTS=1 pytest tests/test_live_devnet.py   # sends 0.001 devnet S
   auto-approve everything outside your grants in unattended runs.
 - Approval prompts need an interactive Hermes session; `hermes chat -q`, cron and
   unattended bots block anything that needs approval (by design).
-- An agent that also has unrestricted shell access could edit Sightline's database or
-  Hermes' config. Keep shell tools on approval mode when the wallet holds real value.
+- An agent with Hermes' local terminal backend can read your profile's `.env` (the wallet key)
+  and edit `plugin-data/sightline/data.db` or Hermes' config. Edited grants are refused (they must
+  match the audit log), but reading the key can't be prevented from inside the plugin. Use a
+  sandboxed terminal backend or terminal approvals when the wallet holds real value.
 - Anyone who can type slash commands to your Hermes (e.g. on a shared messaging
   gateway) can create grants.
 - The Desktop pane refreshes every 5 s rather than instantly.
