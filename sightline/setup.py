@@ -42,10 +42,13 @@ def store_secret(secret: str) -> str:
         lines.append(f"SIGHTLINE_SECRET_KEY={secret}")
         path.write_text("\n".join(lines) + "\n")
         path.chmod(0o600)
+        # Standalone script only: no Hermes, no other profiles, so this process may see it at once.
+        os.environ["SIGHTLINE_SECRET_KEY"] = secret
     else:
+        # Inside Hermes: save_env_value publishes the key to the active profile. Never write it into
+        # os.environ here: on a multi-profile gateway every other profile could read it there.
         save_env_value("SIGHTLINE_SECRET_KEY", secret)
         path = get_env_path()
-    os.environ["SIGHTLINE_SECRET_KEY"] = secret  # this process sees it at once
     return str(path)
 
 
