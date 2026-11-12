@@ -8,9 +8,10 @@ Sightline closes the loop **permission → enforcement → revocation → verifi
 |---|---|---|
 | Human (slash command) | `/sightline grant`, `grants`, `revoke`, `log`, `verify` | — |
 | Human (Desktop pane) | view state, revoke a grant | create, widen or extend a grant (no such route) |
-| Model (tools) | read status + grants, balance, preview, request a payment | create, widen, extend or revoke a grant; sign arbitrary transactions |
+| Model (Sightline's tools) | read status + grants, balance, preview, request a payment | create, widen, extend or revoke a grant; sign arbitrary transactions |
+| Any process with your file access (incl. the agent on Hermes' local terminal backend) | read the key in `.env`; edit `data.db` | make an edited grant count (see below) |
 
-There is no model-callable tool that writes grants or policy
+These guarantees are about Sightline's own surfaces. There is no model-callable tool that writes grants or policy
 (`tests/test_model_cannot_grant.py`), and the Desktop backend has exactly two
 routes, `GET /state` and `POST /revoke` (`tests/test_plugin_api.py`). Slash commands run only when a person
 types them.
@@ -52,12 +53,16 @@ broken entry.
 
 ## Known limits (disclose to users)
 
-- **Local tampering.** The database lives in Hermes' plugin data directory. An
-  agent that also has unrestricted shell access could write to it or to Hermes'
-  config. Hermes' own terminal approvals are the guard there; `/sightline verify`
-  detects edits to past audit entries but not a forged grant row inserted
-  together with a rebuilt chain. Keep shell tools on approval mode when Sightline
-  holds real value.
+- **Shell access (local terminal backend).** Grants are unsigned rows in
+  `plugin-data/sightline/data.db`, and the wallet key is in the profile's `.env`. An agent
+  using Hermes' local terminal backend runs shell commands as you, so it could edit that file
+  or read the key. Sightline limits what an edit buys: a grant authorises only if its row
+  matches the `grant_created` entry in the hash-chained audit log (cap, recipients, expiry,
+  period…), a `grant_revoked` entry can't be undone by clearing `revoked_at`, and if the log
+  fails verification no grant is trusted (`tests/test_grant_integrity.py`). Not covered: an
+  attacker who rebuilds the entire chain with forged entries, and reading the key itself,
+  which no plugin can prevent. **For real funds: run the agent with a sandboxed terminal
+  backend (e.g. Docker) or with terminal commands on approval, and use mainnet only then.**
 - **`approvals.single_query_mode: approve`** (for `-q` runs) and **`approvals.cron_mode:
   approve`** (for cron jobs) in Hermes' config auto-approve plugin approval requests when
   nobody is present. Leave both unset: without them, an unattended run can pay only inside
