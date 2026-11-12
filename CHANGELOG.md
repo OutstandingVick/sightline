@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.6 — catalog review fixes
+- `hermes sightline setup` no longer writes the new key into `os.environ` on the Hermes path:
+  `save_env_value` already publishes it to the active profile, and the shared process environment is
+  readable by every profile on a multi-profile gateway. Only the standalone script sets it.
+- Grants must match their `grant_created` audit entry to authorise anything; a `grant_revoked` entry
+  can't be undone by editing the row; a log that fails verification disables every grant.
+- Docs: the "model cannot create or widen grants" guarantee is scoped to Sightline's own tools. With
+  Hermes' local terminal backend the agent's shell could read the key in `.env` or edit `data.db`;
+  use a sandboxed terminal backend or terminal approvals for real funds.
+
 ## 0.6.5 — budgets and a clearer README
 - Budgets: `/sightline grant <cap> <token> per week|month …` applies the cap per rolling 7 or 30 days
   (default stays 24h). Spend is summed from the audit log over the grant's period; a weekly or monthly

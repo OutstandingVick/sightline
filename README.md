@@ -256,18 +256,19 @@ slip through. With `SIGHTLINE_ALLOW_MAINNET=1` and a mainnet RPC, every preview 
 block message starts with **⚠ MAINNET — real funds**, and the pane's network badge
 turns red. **These are real, irreversible payments.** The firewall limits what a
 compromised agent can do; it doesn't make mainnet risk-free. Use a dedicated wallet
-holding only what you're prepared to lose, and small grants.
+holding only what you're prepared to lose, small grants, and a sandboxed terminal backend
+(or terminal approvals), so the agent's shell can't read the key from `.env`.
 
 ## Tests
 
-**270 Python tests** (268 offline + 2 opt-in live devnet) and **8 JS tests** for the
-Desktop half. **71 are attack cases** (`pytest -m attack`): prompt-injected payments,
+**279 Python tests** (277 offline + 2 opt-in live devnet) and **8 JS tests** for the
+Desktop half. **79 are attack cases** (`pytest -m attack`): prompt-injected payments,
 payments outside or above a grant, unknown programs and authority/approve/close
 instructions, simulation mismatches, bypassing the hook, "always approve" turning into
 a blanket approval, parallel payments racing one cap, the model trying to create a
 grant, key leakage through any output, audit-log tampering, drains and policy at zero
 balance, and Solana Pay links that try to widen a grant or smuggle in a transaction, and splitting payments
-to get around a weekly budget. 15 more cover every
+to get around a weekly budget, and grant rows edited or forged outside Sightline. 15 more cover every
 newcomer failure path (missing key, RPC down, faucet limits, …).
 
 ```bash

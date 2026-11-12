@@ -1,5 +1,5 @@
 name: sightline
-version: "0.6.5"
+version: "0.6.6"
 requires_hermes: ">=0.23.0"
 description: >-
   Solana transaction firewall for Hermes. The agent can check balances, preview and

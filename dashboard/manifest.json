@@ -2,7 +2,7 @@
   "name": "sightline",
   "label": "Sightline",
   "description": "Backend for the Sightline Desktop pane (read-only state + revoke).",
-  "version": "0.6.5",
+  "version": "0.6.6",
   "tab": { "hidden": true },
   "api": "plugin_api.py"
 }
