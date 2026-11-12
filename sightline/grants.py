@@ -138,6 +138,35 @@ def remaining(g: Grant, conn=None, now: float | None = None) -> Decimal:
     return Decimal(g.daily_cap) - audit.spent_in_window(g.id, g.period_s, conn=conn, now=now)
 
 
+_CHECKED = ("created_at", "expires_at", "network", "token", "symbol", "max_per_tx", "daily_cap",
+            "recipients", "note", "period_s")
+
+
+def audit_records(conn=None) -> tuple[dict[str, dict], set[str]]:
+    """(grant id → data of its grant_created event, ids with a grant_revoked event), from the hash-chained log."""
+    created, revoked = {}, set()
+    for e in audit.entries(conn=conn):
+        if e["event"] == "grant_created":
+            created.setdefault(e["data"].get("id"), e["data"])
+        elif e["event"] == "grant_revoked":
+            revoked.add(e["data"].get("id"))
+    return created, revoked
+
+
+def audit_problem(g: Grant, created: dict[str, dict], revoked: set[str]) -> str | None:
+    """Why this grant row can't be trusted, or None. Rows live in a plain SQLite table that a process with
+    file access could edit; the log entry written when the human created the grant is the reference."""
+    record = created.get(g.id)
+    if record is None:
+        return f"grant {g.id} has no creation record in the audit log"
+    expected = {k: record.get(k, DAY if k == "period_s" else "" if k == "note" else None) for k in _CHECKED}
+    if any(getattr(g, k) != expected[k] for k in _CHECKED):
+        return f"grant {g.id} doesn't match its audit record (edited outside Sightline?)"
+    if g.id in revoked:
+        return f"grant {g.id} revoked"
+    return None
+
+
 def find_matching(intent, network: str, conn=None, now: float | None = None) -> tuple[Grant | None, str]:
     """Return (grant, "") for the first grant that covers the intent, else (None, why not).
 
@@ -150,7 +179,15 @@ def find_matching(intent, network: str, conn=None, now: float | None = None) -> 
     candidates = [g for g in list_grants(conn) if g.network == network and g.token == token]
     if not candidates:
         return None, f"no grant for {intent.symbol or token} on {network}"
+    ok, chain = audit.verify(conn=conn)
+    if not ok:  # someone edited the log: trust no grant until a human checks (/sightline verify)
+        return None, f"the audit log failed verification ({chain}); no grant is trusted until it's fixed"
+    created, revoked = audit_records(conn)
     for g in candidates:
+        problem = audit_problem(g, created, revoked)
+        if problem:
+            reasons.append(problem)
+            continue
         status = g.status(now)
         if status != "active":
             reasons.append(f"grant {g.id} {status}")
