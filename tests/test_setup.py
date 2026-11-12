@@ -117,3 +117,29 @@ def test_setup_prints_the_readme_faucets(home):
     assert "sends are blocked until the wallet is funded" in text
     readme = (__import__("pathlib").Path(__file__).resolve().parents[1] / "README.md").read_text()
     assert all(url in readme for url in FAUCET_URLS)  # README and setup list the same faucets
+
+
+@pytest.mark.attack
+def test_inside_hermes_the_key_never_enters_the_shared_environment(home, monkeypatch):
+    """On a multi-profile gateway os.environ is shared; only Hermes' own route may hold the key."""
+    import os
+    import sys
+    import types
+
+    saved = {}
+    cfg = types.ModuleType("hermes_cli.config")
+    cfg.save_env_value = lambda k, v: saved.__setitem__(k, v)
+    cfg.get_env_path = lambda: home / ".env"
+    monkeypatch.setitem(sys.modules, "hermes_cli", types.ModuleType("hermes_cli"))
+    monkeypatch.setitem(sys.modules, "hermes_cli.config", cfg)
+    setup.store_secret("SECRET")
+    assert saved == {"SIGHTLINE_SECRET_KEY": "SECRET"}
+    assert "SIGHTLINE_SECRET_KEY" not in os.environ
+
+
+def test_standalone_script_sets_the_key_for_its_own_process(home):
+    import os
+
+    setup.store_secret("SECRET2")
+    assert os.environ["SIGHTLINE_SECRET_KEY"] == "SECRET2"
+    assert "SIGHTLINE_SECRET_KEY=SECRET2" in (home / ".env").read_text()
